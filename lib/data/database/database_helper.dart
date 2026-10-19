@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import '../models/activity_log.dart';
@@ -17,13 +18,46 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   Database? _database;
+  bool _isFallbackMode = false;
 
-  Future<Database> get database async {
+  // In-memory fallback storage for web environments without WebAssembly/workers
+  UserProfile? _memProfile;
+  final List<FoodItem> _memFoods = [];
+  final List<MealEntry> _memMealEntries = [];
+  final List<WaterLog> _memWaterLogs = [];
+  final List<WeightLog> _memWeightLogs = [];
+  final List<ActivityLog> _memActivityLogs = [];
+  int _nextId = 1000;
+
+  bool get isFallbackMode => _isFallbackMode;
+
+  void _initMemoryFallback() {
+    _memProfile ??= UserProfile.defaultProfile();
+    if (_memFoods.isEmpty) {
+      int id = 1;
+      for (final f in IndianFoodsSeed.initialFoods) {
+        _memFoods.add(f.copyWith(id: id++));
+      }
+      _nextId = id + 10;
+    }
+  }
+
+  Future<Database?> get database async {
+    if (_isFallbackMode) return null;
     if (_database != null && _database!.isOpen) {
       return _database!;
     }
-    _database = await _initDatabase();
-    return _database!;
+    try {
+      _database = await _initDatabase();
+      return _database;
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return null;
+      }
+      rethrow;
+    }
   }
 
   Future<Database> _initDatabase() async {
@@ -80,7 +114,7 @@ class DatabaseHelper {
         measurement_unit TEXT NOT NULL,
         preparation_basis TEXT NOT NULL,
         estimated_unit_price REAL NOT NULL,
-        price_quantity_basis REAL NOT NULL DEFAULT 100.0,
+        price_quantity_basis REAL NOT NULL,
         source_note TEXT,
         is_custom INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
@@ -107,7 +141,7 @@ class DatabaseHelper {
         cost_snapshot REAL NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE SET NULL
+        FOREIGN KEY (food_id) REFERENCES foods (id) ON DELETE SET NULL
       )
     ''');
 
@@ -145,8 +179,13 @@ class DatabaseHelper {
       )
     ''');
 
-    // Performance Indexes
-    await db.execute('CREATE INDEX idx_meals_date ON meal_entries(entry_date)');
+    // Create Indexes for performant date and category filtering
+    await db.execute(
+      'CREATE INDEX idx_meal_entries_date ON meal_entries(entry_date)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_meal_entries_type ON meal_entries(meal_type)',
+    );
     await db.execute('CREATE INDEX idx_foods_cat ON foods(category)');
     await db.execute(
       'CREATE INDEX idx_foods_diet ON foods(dietary_classification)',
@@ -159,7 +198,7 @@ class DatabaseHelper {
       'CREATE INDEX idx_activity_date ON activity_logs(activity_date)',
     );
 
-    // Seed Initial Data in transaction
+    // Seed Initial Data
     await _seedDatabase(db);
   }
 
@@ -191,240 +230,780 @@ class DatabaseHelper {
 
   // ================= USER PROFILE CRUD =================
   Future<UserProfile> getUserProfile() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'user_profile',
-      orderBy: 'id ASC',
-      limit: 1,
-    );
-    if (maps.isNotEmpty) {
-      return UserProfile.fromMap(maps.first);
+    if (_isFallbackMode) {
+      _memProfile ??= UserProfile.defaultProfile();
+      return _memProfile!;
     }
-    // Fallback if somehow empty
-    final def = UserProfile.defaultProfile();
-    final id = await db.insert('user_profile', def.toMap());
-    return def.copyWith(id: id);
+    try {
+      final db = await database;
+      if (db == null) {
+        _memProfile ??= UserProfile.defaultProfile();
+        return _memProfile!;
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'user_profile',
+        orderBy: 'id ASC',
+        limit: 1,
+      );
+      if (maps.isNotEmpty) {
+        return UserProfile.fromMap(maps.first);
+      }
+      final def = UserProfile.defaultProfile();
+      final id = await db.insert('user_profile', def.toMap());
+      return def.copyWith(id: id);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return _memProfile!;
+      }
+      rethrow;
+    }
   }
 
   Future<int> updateUserProfile(UserProfile profile) async {
-    final db = await database;
-    final map = profile.toMap()
-      ..['updated_at'] = DateTime.now().toIso8601String();
-    if (profile.id != null) {
-      return await db.update(
-        'user_profile',
-        map,
-        where: 'id = ?',
-        whereArgs: [profile.id],
-      );
-    } else {
-      return await db.insert('user_profile', map);
+    if (_isFallbackMode) {
+      _memProfile = profile;
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _memProfile = profile;
+        return 1;
+      }
+      final map = profile.toMap()
+        ..['updated_at'] = DateTime.now().toIso8601String();
+      if (profile.id != null) {
+        return await db.update(
+          'user_profile',
+          map,
+          where: 'id = ?',
+          whereArgs: [profile.id],
+        );
+      } else {
+        return await db.insert('user_profile', map);
+      }
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memProfile = profile;
+        return 1;
+      }
+      rethrow;
     }
   }
 
   // ================= FOODS CRUD =================
   Future<List<FoodItem>> getAllFoods() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'foods',
-      orderBy: 'name ASC',
-    );
-    return maps.map((m) => FoodItem.fromMap(m)).toList();
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return List.from(_memFoods);
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return List.from(_memFoods);
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'foods',
+        orderBy: 'name ASC',
+      );
+      return maps.map((m) => FoodItem.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return List.from(_memFoods);
+      }
+      rethrow;
+    }
   }
 
   Future<FoodItem?> getFoodById(int id) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'foods',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-    if (maps.isNotEmpty) {
-      return FoodItem.fromMap(maps.first);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      for (final f in _memFoods) {
+        if (f.id == id) return f;
+      }
+      return null;
     }
-    return null;
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        for (final f in _memFoods) {
+          if (f.id == id) return f;
+        }
+        return null;
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'foods',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      if (maps.isNotEmpty) {
+        return FoodItem.fromMap(maps.first);
+      }
+      return null;
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        for (final f in _memFoods) {
+          if (f.id == id) return f;
+        }
+        return null;
+      }
+      rethrow;
+    }
   }
 
   Future<int> insertFood(FoodItem food) async {
-    final db = await database;
-    return await db.insert('foods', food.toMap());
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final id = _nextId++;
+      _memFoods.add(food.copyWith(id: id));
+      return id;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memFoods.add(food.copyWith(id: id));
+        return id;
+      }
+      return await db.insert('foods', food.toMap());
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memFoods.add(food.copyWith(id: id));
+        return id;
+      }
+      rethrow;
+    }
   }
 
   Future<int> updateFood(FoodItem food) async {
-    final db = await database;
-    final map = food.toMap()..['updated_at'] = DateTime.now().toIso8601String();
-    return await db.update('foods', map, where: 'id = ?', whereArgs: [food.id]);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final idx = _memFoods.indexWhere((f) => f.id == food.id);
+      if (idx != -1) _memFoods[idx] = food;
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final idx = _memFoods.indexWhere((f) => f.id == food.id);
+        if (idx != -1) _memFoods[idx] = food;
+        return 1;
+      }
+      return await db.update(
+        'foods',
+        food.toMap(),
+        where: 'id = ?',
+        whereArgs: [food.id],
+      );
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final idx = _memFoods.indexWhere((f) => f.id == food.id);
+        if (idx != -1) _memFoods[idx] = food;
+        return 1;
+      }
+      rethrow;
+    }
   }
 
   Future<int> deleteFood(int id) async {
-    final db = await database;
-    // Meal entries reference food_id with ON DELETE SET NULL, preserving meal history
-    return await db.delete('foods', where: 'id = ?', whereArgs: [id]);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memFoods.removeWhere((f) => f.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memFoods.removeWhere((f) => f.id == id);
+        return 1;
+      }
+      return await db.delete('foods', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memFoods.removeWhere((f) => f.id == id);
+        return 1;
+      }
+      rethrow;
+    }
   }
 
   // ================= MEAL ENTRIES CRUD =================
-  Future<List<MealEntry>> getMealEntriesForDate(DateTime date) async {
-    final db = await database;
-    final startOfDay = DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).toIso8601String();
-    final endOfDay = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      23,
-      59,
-      59,
-      999,
-    ).toIso8601String();
+  Future<int> insertMealEntry(MealEntry entry) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final id = _nextId++;
+      _memMealEntries.add(entry.copyWith(id: id));
+      return id;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memMealEntries.add(entry.copyWith(id: id));
+        return id;
+      }
+      return await db.insert('meal_entries', entry.toMap());
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memMealEntries.add(entry.copyWith(id: id));
+        return id;
+      }
+      rethrow;
+    }
+  }
 
-    final List<Map<String, dynamic>> maps = await db.query(
-      'meal_entries',
-      where: 'entry_date >= ? AND entry_date <= ?',
-      whereArgs: [startOfDay, endOfDay],
-      orderBy: 'created_at ASC',
-    );
-    return maps.map((m) => MealEntry.fromMap(m)).toList();
+  Future<List<MealEntry>> getMealEntriesForDate(DateTime date) async {
+    final dateStr =
+        '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return _memMealEntries.where((e) {
+        final eDateStr =
+            '${e.entryDate.year.toString().padLeft(4, '0')}-${e.entryDate.month.toString().padLeft(2, '0')}-${e.entryDate.day.toString().padLeft(2, '0')}';
+        return eDateStr == dateStr;
+      }).toList();
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return _memMealEntries.where((e) {
+          final eDateStr =
+              '${e.entryDate.year.toString().padLeft(4, '0')}-${e.entryDate.month.toString().padLeft(2, '0')}-${e.entryDate.day.toString().padLeft(2, '0')}';
+          return eDateStr == dateStr;
+        }).toList();
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'meal_entries',
+        where: "entry_date LIKE ?",
+        whereArgs: ['$dateStr%'],
+        orderBy: 'id ASC',
+      );
+      return maps.map((m) => MealEntry.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return _memMealEntries.where((e) {
+          final eDateStr =
+              '${e.entryDate.year.toString().padLeft(4, '0')}-${e.entryDate.month.toString().padLeft(2, '0')}-${e.entryDate.day.toString().padLeft(2, '0')}';
+          return eDateStr == dateStr;
+        }).toList();
+      }
+      rethrow;
+    }
   }
 
   Future<List<MealEntry>> getMealEntriesBetweenDates(
-    DateTime start,
-    DateTime end,
+    DateTime startDate,
+    DateTime endDate,
   ) async {
-    final db = await database;
-    final startStr = DateTime(
-      start.year,
-      start.month,
-      start.day,
-    ).toIso8601String();
-    final endStr = DateTime(
-      end.year,
-      end.month,
-      end.day,
-      23,
-      59,
-      59,
-      999,
-    ).toIso8601String();
+    final startStr =
+        '${startDate.year.toString().padLeft(4, '0')}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+    final endStr =
+        '${endDate.year.toString().padLeft(4, '0')}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}T23:59:59';
 
-    final List<Map<String, dynamic>> maps = await db.query(
-      'meal_entries',
-      where: 'entry_date >= ? AND entry_date <= ?',
-      whereArgs: [startStr, endStr],
-      orderBy: 'entry_date ASC',
-    );
-    return maps.map((m) => MealEntry.fromMap(m)).toList();
-  }
-
-  Future<int> insertMealEntry(MealEntry entry) async {
-    final db = await database;
-    return await db.insert('meal_entries', entry.toMap());
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return _memMealEntries.where((e) {
+        return !e.entryDate.isBefore(startDate) &&
+            !e.entryDate.isAfter(endDate.add(const Duration(days: 1)));
+      }).toList();
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return _memMealEntries.where((e) {
+          return !e.entryDate.isBefore(startDate) &&
+              !e.entryDate.isAfter(endDate.add(const Duration(days: 1)));
+        }).toList();
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'meal_entries',
+        where: 'entry_date >= ? AND entry_date <= ?',
+        whereArgs: [startStr, endStr],
+        orderBy: 'entry_date ASC',
+      );
+      return maps.map((m) => MealEntry.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return _memMealEntries.where((e) {
+          return !e.entryDate.isBefore(startDate) &&
+              !e.entryDate.isAfter(endDate.add(const Duration(days: 1)));
+        }).toList();
+      }
+      rethrow;
+    }
   }
 
   Future<void> insertMultipleMealEntries(List<MealEntry> entries) async {
-    final db = await database;
-    await db.transaction((txn) async {
-      final batch = txn.batch();
-      for (final entry in entries) {
-        batch.insert('meal_entries', entry.toMap());
-      }
-      await batch.commit(noResult: true);
-    });
+    for (final entry in entries) {
+      await insertMealEntry(entry);
+    }
   }
 
   Future<int> updateMealEntry(MealEntry entry) async {
-    final db = await database;
-    final map = entry.toMap()
-      ..['updated_at'] = DateTime.now().toIso8601String();
-    return await db.update(
-      'meal_entries',
-      map,
-      where: 'id = ?',
-      whereArgs: [entry.id],
-    );
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final index = _memMealEntries.indexWhere((e) => e.id == entry.id);
+      if (index != -1) {
+        _memMealEntries[index] = entry;
+        return 1;
+      }
+      return 0;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final index = _memMealEntries.indexWhere((e) => e.id == entry.id);
+        if (index != -1) {
+          _memMealEntries[index] = entry;
+          return 1;
+        }
+        return 0;
+      }
+      return await db.update(
+        'meal_entries',
+        entry.toMap(),
+        where: 'id = ?',
+        whereArgs: [entry.id],
+      );
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final index = _memMealEntries.indexWhere((e) => e.id == entry.id);
+        if (index != -1) {
+          _memMealEntries[index] = entry;
+          return 1;
+        }
+        return 0;
+      }
+      rethrow;
+    }
   }
 
   Future<int> deleteMealEntry(int id) async {
-    final db = await database;
-    return await db.delete('meal_entries', where: 'id = ?', whereArgs: [id]);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memMealEntries.removeWhere((e) => e.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memMealEntries.removeWhere((e) => e.id == id);
+        return 1;
+      }
+      return await db.delete('meal_entries', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memMealEntries.removeWhere((e) => e.id == id);
+        return 1;
+      }
+      rethrow;
+    }
   }
 
   // ================= WATER LOGS CRUD =================
-  Future<List<WaterLog>> getWaterLogsForDate(String dateStr) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'water_logs',
-      where: 'entry_date = ?',
-      whereArgs: [dateStr],
-      orderBy: 'created_at ASC',
-    );
-    return maps.map((m) => WaterLog.fromMap(m)).toList();
-  }
-
-  Future<double> getTotalWaterForDate(String dateStr) async {
-    final db = await database;
-    final result = await db.rawQuery(
-      'SELECT SUM(quantity_ml) as total FROM water_logs WHERE entry_date = ?',
-      [dateStr],
-    );
-    final val = result.first['total'];
-    return (val as num?)?.toDouble() ?? 0.0;
+  Future<List<WaterLog>> getWaterLogsForDate(String date) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return _memWaterLogs.where((w) => w.entryDate == date).toList();
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return _memWaterLogs.where((w) => w.entryDate == date).toList();
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'water_logs',
+        where: 'entry_date = ?',
+        whereArgs: [date],
+        orderBy: 'id ASC',
+      );
+      return maps.map((m) => WaterLog.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return _memWaterLogs.where((w) => w.entryDate == date).toList();
+      }
+      rethrow;
+    }
   }
 
   Future<int> insertWaterLog(WaterLog log) async {
-    final db = await database;
-    return await db.insert('water_logs', log.toMap());
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final id = _nextId++;
+      _memWaterLogs.add(
+        WaterLog(
+          id: id,
+          entryDate: log.entryDate,
+          quantityMl: log.quantityMl,
+          createdAt: log.createdAt,
+        ),
+      );
+      return id;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memWaterLogs.add(
+          WaterLog(
+            id: id,
+            entryDate: log.entryDate,
+            quantityMl: log.quantityMl,
+            createdAt: log.createdAt,
+          ),
+        );
+        return id;
+      }
+      return await db.insert('water_logs', log.toMap());
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memWaterLogs.add(
+          WaterLog(
+            id: id,
+            entryDate: log.entryDate,
+            quantityMl: log.quantityMl,
+            createdAt: log.createdAt,
+          ),
+        );
+        return id;
+      }
+      rethrow;
+    }
   }
 
   Future<int> deleteWaterLog(int id) async {
-    final db = await database;
-    return await db.delete('water_logs', where: 'id = ?', whereArgs: [id]);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memWaterLogs.removeWhere((w) => w.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memWaterLogs.removeWhere((w) => w.id == id);
+        return 1;
+      }
+      return await db.delete('water_logs', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memWaterLogs.removeWhere((w) => w.id == id);
+        return 1;
+      }
+      rethrow;
+    }
+  }
+
+  Future<double> getTotalWaterForDate(String date) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return _memWaterLogs.where((w) => w.entryDate == date).fold<double>(
+        0.0,
+        (double sum, w) => sum + w.quantityMl,
+      );
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return _memWaterLogs.where((w) => w.entryDate == date).fold<double>(
+          0.0,
+          (double sum, w) => sum + w.quantityMl,
+        );
+      }
+      final result = await db.rawQuery(
+        'SELECT SUM(quantity_ml) as total FROM water_logs WHERE entry_date = ?',
+        [date],
+      );
+      if (result.isNotEmpty && result.first['total'] != null) {
+        return (result.first['total'] as num).toDouble();
+      }
+      return 0.0;
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return _memWaterLogs.where((w) => w.entryDate == date).fold<double>(
+          0.0,
+          (double sum, w) => sum + w.quantityMl,
+        );
+      }
+      rethrow;
+    }
   }
 
   // ================= WEIGHT LOGS CRUD =================
   Future<List<WeightLog>> getWeightLogs({int limit = 60}) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'weight_logs',
-      orderBy: 'measurement_date ASC',
-      limit: limit,
-    );
-    return maps.map((m) => WeightLog.fromMap(m)).toList();
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final logs = List<WeightLog>.from(_memWeightLogs);
+      logs.sort((a, b) => b.measurementDate.compareTo(a.measurementDate));
+      return logs.take(limit).toList();
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final logs = List<WeightLog>.from(_memWeightLogs);
+        logs.sort((a, b) => b.measurementDate.compareTo(a.measurementDate));
+        return logs.take(limit).toList();
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'weight_logs',
+        orderBy: 'measurement_date DESC',
+        limit: limit,
+      );
+      return maps.map((m) => WeightLog.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final logs = List<WeightLog>.from(_memWeightLogs);
+        logs.sort((a, b) => b.measurementDate.compareTo(a.measurementDate));
+        return logs.take(limit).toList();
+      }
+      rethrow;
+    }
   }
 
   Future<int> insertWeightLog(WeightLog log) async {
-    final db = await database;
-    return await db.insert('weight_logs', log.toMap());
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final id = _nextId++;
+      _memWeightLogs.add(
+        WeightLog(
+          id: id,
+          measurementDate: log.measurementDate,
+          weight: log.weight,
+          notes: log.notes,
+          createdAt: log.createdAt,
+        ),
+      );
+      return id;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memWeightLogs.add(
+          WeightLog(
+            id: id,
+            measurementDate: log.measurementDate,
+            weight: log.weight,
+            notes: log.notes,
+            createdAt: log.createdAt,
+          ),
+        );
+        return id;
+      }
+      return await db.insert('weight_logs', log.toMap());
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memWeightLogs.add(
+          WeightLog(
+            id: id,
+            measurementDate: log.measurementDate,
+            weight: log.weight,
+            notes: log.notes,
+            createdAt: log.createdAt,
+          ),
+        );
+        return id;
+      }
+      rethrow;
+    }
   }
 
   Future<int> deleteWeightLog(int id) async {
-    final db = await database;
-    return await db.delete('weight_logs', where: 'id = ?', whereArgs: [id]);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memWeightLogs.removeWhere((w) => w.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memWeightLogs.removeWhere((w) => w.id == id);
+        return 1;
+      }
+      return await db.delete('weight_logs', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memWeightLogs.removeWhere((w) => w.id == id);
+        return 1;
+      }
+      rethrow;
+    }
   }
 
   // ================= ACTIVITY LOGS CRUD =================
-  Future<List<ActivityLog>> getActivityLogsForDate(String dateStr) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'activity_logs',
-      where: 'activity_date = ?',
-      whereArgs: [dateStr],
-      orderBy: 'created_at ASC',
-    );
-    return maps.map((m) => ActivityLog.fromMap(m)).toList();
+  Future<List<ActivityLog>> getActivityLogsForDate(String date) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return _memActivityLogs.where((a) => a.activityDate == date).toList();
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return _memActivityLogs.where((a) => a.activityDate == date).toList();
+      }
+      final List<Map<String, dynamic>> maps = await db.query(
+        'activity_logs',
+        where: 'activity_date = ?',
+        whereArgs: [date],
+        orderBy: 'id ASC',
+      );
+      return maps.map((m) => ActivityLog.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return _memActivityLogs.where((a) => a.activityDate == date).toList();
+      }
+      rethrow;
+    }
   }
 
   Future<int> insertActivityLog(ActivityLog log) async {
-    final db = await database;
-    return await db.insert('activity_logs', log.toMap());
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final id = _nextId++;
+      _memActivityLogs.add(
+        ActivityLog(
+          id: id,
+          activityDate: log.activityDate,
+          activityType: log.activityType,
+          durationMinutes: log.durationMinutes,
+          estimatedCalories: log.estimatedCalories,
+          notes: log.notes,
+          createdAt: log.createdAt,
+        ),
+      );
+      return id;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memActivityLogs.add(
+          ActivityLog(
+            id: id,
+            activityDate: log.activityDate,
+            activityType: log.activityType,
+            durationMinutes: log.durationMinutes,
+            estimatedCalories: log.estimatedCalories,
+            notes: log.notes,
+            createdAt: log.createdAt,
+          ),
+        );
+        return id;
+      }
+      return await db.insert('activity_logs', log.toMap());
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memActivityLogs.add(
+          ActivityLog(
+            id: id,
+            activityDate: log.activityDate,
+            activityType: log.activityType,
+            durationMinutes: log.durationMinutes,
+            estimatedCalories: log.estimatedCalories,
+            notes: log.notes,
+            createdAt: log.createdAt,
+          ),
+        );
+        return id;
+      }
+      rethrow;
+    }
   }
 
   Future<int> deleteActivityLog(int id) async {
-    final db = await database;
-    return await db.delete('activity_logs', where: 'id = ?', whereArgs: [id]);
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memActivityLogs.removeWhere((a) => a.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memActivityLogs.removeWhere((a) => a.id == id);
+        return 1;
+      }
+      return await db.delete(
+        'activity_logs',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memActivityLogs.removeWhere((a) => a.id == id);
+        return 1;
+      }
+      rethrow;
+    }
   }
 
   Future<void> close() async {

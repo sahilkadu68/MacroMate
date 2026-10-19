@@ -9,7 +9,7 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 /// On Desktop / Unit tests: Uses sqflite_common_ffi (C SQLite3 FFI).
 void initDatabaseFactory() {
   if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb;
+    databaseFactory = databaseFactoryFfiWebNoWebWorker;
   } else if (!kIsWeb &&
       (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     sqfliteFfiInit();
