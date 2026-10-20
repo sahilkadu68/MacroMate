@@ -576,10 +576,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-
-                    ElevatedButton(
-                      onPressed: _saveProfile,
-                      child: const Text('Save Profile & Targets'),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saveProfile,
+                        child: const Text('Save Profile & Targets'),
+                      ),
                     ),
                     const SizedBox(height: 24),
 

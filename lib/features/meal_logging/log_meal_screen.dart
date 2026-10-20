@@ -49,7 +49,8 @@ class _LogMealScreenState extends State<LogMealScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedMealType = widget.existingEntry?.mealType ?? widget.initialMealType;
+    _selectedMealType =
+        widget.existingEntry?.mealType ?? widget.initialMealType;
 
     if (widget.existingEntry != null) {
       // Editing existing single entry: stage it immediately
@@ -68,7 +69,9 @@ class _LogMealScreenState extends State<LogMealScreen> {
         estimatedUnitPrice: entry.unitPriceSnapshot,
         priceQuantityBasis: 100.0,
       );
-      _stagedItems.add(StagedMealItem(food: placeholderFood, quantity: entry.quantity));
+      _stagedItems.add(
+        StagedMealItem(food: placeholderFood, quantity: entry.quantity),
+      );
     }
   }
 
@@ -78,22 +81,30 @@ class _LogMealScreenState extends State<LogMealScreen> {
     super.dispose();
   }
 
-  double get _totalCalories => _stagedItems.fold(0.0, (sum, i) => sum + i.calories);
-  double get _totalProtein => _stagedItems.fold(0.0, (sum, i) => sum + i.protein);
+  double get _totalCalories =>
+      _stagedItems.fold(0.0, (sum, i) => sum + i.calories);
+  double get _totalProtein =>
+      _stagedItems.fold(0.0, (sum, i) => sum + i.protein);
   double get _totalCarbs => _stagedItems.fold(0.0, (sum, i) => sum + i.carbs);
   double get _totalFat => _stagedItems.fold(0.0, (sum, i) => sum + i.fat);
   double get _totalCost => _stagedItems.fold(0.0, (sum, i) => sum + i.cost);
 
   void _addFoodToStaged(FoodItem food) {
     // If food already staged, increase quantity by 100 or default unit
-    final existingIdx = _stagedItems.indexWhere((i) => i.food.id == food.id && food.id != null);
+    final existingIdx = _stagedItems.indexWhere(
+      (i) => i.food.id == food.id && food.id != null,
+    );
     if (existingIdx != -1) {
       setState(() {
-        _stagedItems[existingIdx].quantity += (food.measurementUnit == 'piece' ? 1.0 : 50.0);
+        _stagedItems[existingIdx].quantity += (food.measurementUnit == 'piece'
+            ? 1.0
+            : 50.0);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Updated ${food.name} portion to ${_stagedItems[existingIdx].quantity.toInt()}${food.measurementUnit}'),
+          content: Text(
+            'Updated ${food.name} portion to ${_stagedItems[existingIdx].quantity.toInt()}${food.measurementUnit}',
+          ),
           duration: const Duration(seconds: 1),
         ),
       );
@@ -105,8 +116,12 @@ class _LogMealScreenState extends State<LogMealScreen> {
 
   void _showPortionDialog(FoodItem food, {int? editIndex}) {
     final isEditing = editIndex != null;
-    final initialQty = isEditing ? _stagedItems[editIndex].quantity : (food.measurementUnit == 'piece' ? 2.0 : 100.0);
-    final controller = TextEditingController(text: initialQty.toInt().toString());
+    final initialQty = isEditing
+        ? _stagedItems[editIndex].quantity
+        : (food.measurementUnit == 'piece' ? 2.0 : 100.0);
+    final controller = TextEditingController(
+      text: initialQty.toInt().toString(),
+    );
 
     showDialog(
       context: context,
@@ -119,7 +134,13 @@ class _LogMealScreenState extends State<LogMealScreen> {
             final cost = food.costForQuantity(parsedQty);
 
             return AlertDialog(
-              title: Text(food.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              title: Text(
+                food.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,9 +148,14 @@ class _LogMealScreenState extends State<LogMealScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: DietaryService.getClassificationColor(food.dietaryClassification).withAlpha(25),
+                          color: DietaryService.getClassificationColor(
+                            food.dietaryClassification,
+                          ).withAlpha(25),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -137,19 +163,29 @@ class _LogMealScreenState extends State<LogMealScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: DietaryService.getClassificationColor(food.dietaryClassification),
+                            color: DietaryService.getClassificationColor(
+                              food.dietaryClassification,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('Basis: ${food.preparationBasis}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        'Basis: ${food.preparationBasis}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: controller,
                     autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Serving Quantity (${food.measurementUnit})',
                       suffixText: food.measurementUnit,
@@ -166,9 +202,21 @@ class _LogMealScreenState extends State<LogMealScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildDialogStat('Protein', '${prot.toStringAsFixed(1)}g', AppColors.protein),
-                        _buildDialogStat('Calories', '${cal.round()} kcal', AppColors.calories),
-                        _buildDialogStat('Est. Cost', Formatters.currency(cost), AppColors.secondary),
+                        _buildDialogStat(
+                          'Protein',
+                          '${prot.toStringAsFixed(1)}g',
+                          AppColors.protein,
+                        ),
+                        _buildDialogStat(
+                          'Calories',
+                          '${cal.round()} kcal',
+                          AppColors.calories,
+                        ),
+                        _buildDialogStat(
+                          'Est. Cost',
+                          Formatters.currency(cost),
+                          AppColors.secondary,
+                        ),
                       ],
                     ),
                   ),
@@ -187,7 +235,9 @@ class _LogMealScreenState extends State<LogMealScreen> {
                       if (isEditing) {
                         _stagedItems[editIndex].quantity = qty;
                       } else {
-                        _stagedItems.add(StagedMealItem(food: food, quantity: qty));
+                        _stagedItems.add(
+                          StagedMealItem(food: food, quantity: qty),
+                        );
                       }
                     });
                     Navigator.pop(ctx);
@@ -207,7 +257,14 @@ class _LogMealScreenState extends State<LogMealScreen> {
       children: [
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: color,
+          ),
+        ),
       ],
     );
   }
@@ -255,7 +312,9 @@ class _LogMealScreenState extends State<LogMealScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.primary,
-            content: Text('Saved ${_stagedItems.length} item(s) to $_selectedMealType!'),
+            content: Text(
+              'Saved ${_stagedItems.length} item(s) to $_selectedMealType!',
+            ),
           ),
         );
         Navigator.pop(context);
@@ -264,7 +323,10 @@ class _LogMealScreenState extends State<LogMealScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppColors.error, content: Text('Error saving meal: $e')),
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text('Error saving meal: $e'),
+          ),
         );
       }
     }
@@ -278,7 +340,9 @@ class _LogMealScreenState extends State<LogMealScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.primary,
-            content: Text('Repeated $count item(s) from yesterday\'s $_selectedMealType!'),
+            content: Text(
+              'Repeated $count item(s) from yesterday\'s $_selectedMealType!',
+            ),
           ),
         );
         Navigator.pop(context);
@@ -302,26 +366,41 @@ class _LogMealScreenState extends State<LogMealScreen> {
     List<FoodItem> sourceFoods;
     if (_activeSourceTab == 1) {
       final recentIds = mealProvider.recentFoodIds;
-      sourceFoods = foodProvider.allFoods.where((f) => f.id != null && recentIds.contains(f.id)).toList();
+      sourceFoods = foodProvider.allFoods
+          .where((f) => f.id != null && recentIds.contains(f.id))
+          .toList();
     } else if (_activeSourceTab == 2) {
-      sourceFoods = foodProvider.allFoods.where((f) => foodProvider.isFavorite(f.id)).toList();
+      sourceFoods = foodProvider.allFoods
+          .where((f) => foodProvider.isFavorite(f.id))
+          .toList();
     } else {
       sourceFoods = foodProvider.allFoods;
     }
 
     if (_searchController.text.trim().isNotEmpty) {
       final q = _searchController.text.trim().toLowerCase();
-      sourceFoods = sourceFoods.where((f) => f.name.toLowerCase().contains(q) || f.category.toLowerCase().contains(q)).toList();
+      sourceFoods = sourceFoods
+          .where(
+            (f) =>
+                f.name.toLowerCase().contains(q) ||
+                f.category.toLowerCase().contains(q),
+          )
+          .toList();
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.existingEntry != null ? 'Edit Meal Entry' : 'Log Meal'),
+        title: Text(
+          widget.existingEntry != null ? 'Edit Meal Entry' : 'Log Meal',
+        ),
         actions: [
           if (widget.existingEntry == null)
             TextButton.icon(
               icon: const Icon(Icons.history, size: 18),
-              label: const Text('Repeat Yesterday', style: TextStyle(fontSize: 12)),
+              label: const Text(
+                'Repeat Yesterday',
+                style: TextStyle(fontSize: 12),
+              ),
               onPressed: _handleRepeatYesterday,
             ),
         ],
@@ -369,11 +448,18 @@ class _LogMealScreenState extends State<LogMealScreen> {
                     children: [
                       Text(
                         'Items in this Meal (${_stagedItems.length})',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                       Text(
                         '${_totalProtein.toStringAsFixed(1)}g P · ${Formatters.currency(_totalCost)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -388,7 +474,13 @@ class _LogMealScreenState extends State<LogMealScreen> {
                         return ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          title: Text(item.food.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          title: Text(
+                            item.food.name,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           subtitle: Text(
                             '${item.quantity.toInt()}${item.food.measurementUnit} · ${item.protein.toStringAsFixed(1)}g P · ${item.calories.round()} kcal · ${Formatters.currency(item.cost)}',
                             style: const TextStyle(fontSize: 11),
@@ -398,11 +490,19 @@ class _LogMealScreenState extends State<LogMealScreen> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit_outlined, size: 16),
-                                onPressed: () => _showPortionDialog(item.food, editIndex: idx),
+                                onPressed: () => _showPortionDialog(
+                                  item.food,
+                                  editIndex: idx,
+                                ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, size: 16, color: Colors.red),
-                                onPressed: () => setState(() => _stagedItems.removeAt(idx)),
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _stagedItems.removeAt(idx)),
                               ),
                             ],
                           ),
@@ -426,7 +526,10 @@ class _LogMealScreenState extends State<LogMealScreen> {
                       hintText: 'Search foods...',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 16),
@@ -448,7 +551,10 @@ class _LogMealScreenState extends State<LogMealScreen> {
                   onSelected: (val) => setState(() => _activeSourceTab = val),
                   itemBuilder: (ctx) => [
                     const PopupMenuItem(value: 0, child: Text('All Foods')),
-                    const PopupMenuItem(value: 1, child: Text('Recently Logged')),
+                    const PopupMenuItem(
+                      value: 1,
+                      child: Text('Recently Logged'),
+                    ),
                     const PopupMenuItem(value: 2, child: Text('Favourites')),
                   ],
                 ),
@@ -481,8 +587,8 @@ class _LogMealScreenState extends State<LogMealScreen> {
                       _activeSourceTab == 1
                           ? 'No recent foods logged yet.'
                           : _activeSourceTab == 2
-                              ? 'No favourite foods marked yet.'
-                              : 'No matching foods found.',
+                          ? 'No favourite foods marked yet.'
+                          : 'No matching foods found.',
                       style: const TextStyle(color: Colors.grey),
                     ),
                   )
@@ -496,17 +602,30 @@ class _LogMealScreenState extends State<LogMealScreen> {
                         dense: true,
                         leading: CircleAvatar(
                           radius: 16,
-                          backgroundColor: DietaryService.getClassificationColor(food.dietaryClassification).withAlpha(30),
+                          backgroundColor:
+                              DietaryService.getClassificationColor(
+                                food.dietaryClassification,
+                              ).withAlpha(30),
                           child: Text(
-                            DietaryService.getClassificationLabel(food.dietaryClassification)[0],
+                            DietaryService.getClassificationLabel(
+                              food.dietaryClassification,
+                            )[0],
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: DietaryService.getClassificationColor(food.dietaryClassification),
+                              color: DietaryService.getClassificationColor(
+                                food.dietaryClassification,
+                              ),
                             ),
                           ),
                         ),
-                        title: Text(food.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        title: Text(
+                          food.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
                         subtitle: Text(
                           '${food.proteinPer100}g P per 100${food.measurementUnit} · ${food.caloriesPer100.round()} kcal · ${Formatters.currency(food.costPer100)}/100${food.measurementUnit}',
                           style: const TextStyle(fontSize: 11),
@@ -517,14 +636,22 @@ class _LogMealScreenState extends State<LogMealScreen> {
                             if (food.proteinPerRupee != null)
                               EfficiencyBadge(efficiency: food.proteinPerRupee),
                             IconButton(
-                              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
-                                  size: 18, color: isFav ? Colors.red : Colors.grey),
+                              icon: Icon(
+                                isFav ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: isFav ? Colors.red : Colors.grey,
+                              ),
                               onPressed: () {
-                                if (food.id != null) foodProvider.toggleFavorite(food.id!);
+                                if (food.id != null) {
+                                  foodProvider.toggleFavorite(food.id!);
+                                }
                               },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                              icon: const Icon(
+                                Icons.add_circle,
+                                color: AppColors.primary,
+                              ),
                               onPressed: () => _addFoodToStaged(food),
                             ),
                           ],
@@ -558,22 +685,41 @@ class _LogMealScreenState extends State<LogMealScreen> {
                       children: [
                         Text(
                           'Meal: ${_totalProtein.toStringAsFixed(1)}g Protein',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.protein),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.protein,
+                          ),
                         ),
                         Text(
                           '${_totalCalories.round()} kcal (${_totalCarbs.round()}g C, ${_totalFat.round()}g F) · ${Formatters.currency(_totalCost)}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      minimumSize: const Size(110, 44),
                     ),
                     onPressed: _isSaving ? null : _handleSaveMeal,
                     child: _isSaving
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : Text(
                             widget.existingEntry != null
                                 ? 'Update Entry'

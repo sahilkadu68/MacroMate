@@ -421,13 +421,15 @@ class _AddEditFoodScreenState extends State<AddEditFoodScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              ElevatedButton(
-                onPressed: _submit,
-                child: Text(
-                  widget.existingFood != null
-                      ? 'Update Food Item'
-                      : 'Add Food to Catalogue',
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  child: Text(
+                    widget.existingFood != null
+                        ? 'Update Food Item'
+                        : 'Add Food to Catalogue',
+                  ),
                 ),
               ),
             ],

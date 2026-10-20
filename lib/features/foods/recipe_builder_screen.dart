@@ -28,8 +28,10 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
     super.dispose();
   }
 
-  double get _totalCalories => _ingredients.fold(0.0, (sum, i) => sum + i.calories);
-  double get _totalProtein => _ingredients.fold(0.0, (sum, i) => sum + i.protein);
+  double get _totalCalories =>
+      _ingredients.fold(0.0, (sum, i) => sum + i.calories);
+  double get _totalProtein =>
+      _ingredients.fold(0.0, (sum, i) => sum + i.protein);
   double get _totalCarbs => _ingredients.fold(0.0, (sum, i) => sum + i.carbs);
   double get _totalFat => _ingredients.fold(0.0, (sum, i) => sum + i.fat);
   double get _totalCost => _ingredients.fold(0.0, (sum, i) => sum + i.cost);
@@ -51,7 +53,10 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
             final cost = selectedFood?.costForQuantity(qty) ?? 0.0;
 
             return AlertDialog(
-              title: const Text('Add Ingredient', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              title: const Text(
+                'Add Ingredient',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -62,7 +67,11 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                     items: foods.map((f) {
                       return DropdownMenuItem(
                         value: f,
-                        child: Text(f.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          f.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       );
                     }).toList(),
                     onChanged: (val) {
@@ -72,16 +81,23 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: qtyController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
-                      labelText: 'Quantity (${selectedFood?.measurementUnit ?? 'g'})',
+                      labelText:
+                          'Quantity (${selectedFood?.measurementUnit ?? 'g'})',
                     ),
                     onChanged: (_) => setDialogState(() {}),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     '${prot.toStringAsFixed(1)}g Protein · ${cal.round()} kcal · ${Formatters.currency(cost)}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ],
               ),
@@ -95,7 +111,10 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                     if (selectedFood != null && qty > 0) {
                       setState(() {
                         _ingredients.add(
-                          RecipeIngredient.fromFood(food: selectedFood!, quantity: qty),
+                          RecipeIngredient.fromFood(
+                            food: selectedFood!,
+                            quantity: qty,
+                          ),
                         );
                       });
                       Navigator.pop(ctx);
@@ -132,7 +151,10 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: AppColors.primary, content: Text('Saved recipe "${recipe.name}"!')),
+        SnackBar(
+          backgroundColor: AppColors.primary,
+          content: Text('Saved recipe "${recipe.name}"!'),
+        ),
       );
       Navigator.pop(context);
     }
@@ -167,7 +189,9 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Recipe Name (e.g., Soya Egg Bhurji)',
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter recipe name' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Please enter recipe name'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -182,8 +206,17 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Number of Servings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text('$_servings Servings', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  const Text(
+                    'Number of Servings',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  Text(
+                    '$_servings Servings',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ],
               ),
               Slider(
@@ -208,19 +241,52 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Per Serving Breakdown:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        Text('Total: ${Formatters.currency(_totalCost)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.secondary)),
+                        const Text(
+                          'Per Serving Breakdown:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'Total: ${Formatters.currency(_totalCost)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: AppColors.secondary,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat('Protein', '${perServingProt.toStringAsFixed(1)}g', AppColors.protein),
-                        _buildStat('Carbs', '${(_totalCarbs / (_servings > 0 ? _servings : 1)).toStringAsFixed(1)}g', AppColors.carbs),
-                        _buildStat('Fat', '${(_totalFat / (_servings > 0 ? _servings : 1)).toStringAsFixed(1)}g', AppColors.fat),
-                        _buildStat('Calories', '${perServingCal.round()} kcal', AppColors.calories),
-                        _buildStat('Cost / Serve', Formatters.currency(perServingCost), AppColors.secondary),
+                        _buildStat(
+                          'Protein',
+                          '${perServingProt.toStringAsFixed(1)}g',
+                          AppColors.protein,
+                        ),
+                        _buildStat(
+                          'Carbs',
+                          '${(_totalCarbs / (_servings > 0 ? _servings : 1)).toStringAsFixed(1)}g',
+                          AppColors.carbs,
+                        ),
+                        _buildStat(
+                          'Fat',
+                          '${(_totalFat / (_servings > 0 ? _servings : 1)).toStringAsFixed(1)}g',
+                          AppColors.fat,
+                        ),
+                        _buildStat(
+                          'Calories',
+                          '${perServingCal.round()} kcal',
+                          AppColors.calories,
+                        ),
+                        _buildStat(
+                          'Cost / Serve',
+                          Formatters.currency(perServingCost),
+                          AppColors.secondary,
+                        ),
                       ],
                     ),
                   ],
@@ -232,7 +298,12 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Ingredients (${_ingredients.length})', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Ingredients (${_ingredients.length})',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   TextButton.icon(
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Add Food'),
@@ -246,7 +317,10 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   alignment: Alignment.center,
-                  child: const Text('No ingredients added yet. Tap "+ Add Food" to build recipe.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  child: const Text(
+                    'No ingredients added yet. Tap "+ Add Food" to build recipe.',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 )
               else
                 ListView.separated(
@@ -259,24 +333,37 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      title: Text(ing.foodName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      title: Text(
+                        ing.foodName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                       subtitle: Text(
                         '${ing.quantity.toInt()}${ing.measurementUnit} · ${ing.protein.toStringAsFixed(1)}g P · ${ing.calories.round()} kcal · ${Formatters.currency(ing.cost)}',
                         style: const TextStyle(fontSize: 11),
                       ),
                       trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle_outline, size: 18, color: Colors.red),
-                        onPressed: () => setState(() => _ingredients.removeAt(idx)),
+                        icon: const Icon(
+                          Icons.remove_circle_outline,
+                          size: 18,
+                          color: Colors.red,
+                        ),
+                        onPressed: () =>
+                            setState(() => _ingredients.removeAt(idx)),
                       ),
                     );
                   },
                 ),
               const SizedBox(height: 24),
-
-              ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: const Text('Save Recipe'),
-                onPressed: _handleSave,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save Recipe'),
+                  onPressed: _handleSave,
+                ),
               ),
             ],
           ),
@@ -290,7 +377,14 @@ class _RecipeBuilderScreenState extends State<RecipeBuilderScreen> {
       children: [
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: color,
+          ),
+        ),
       ],
     );
   }
