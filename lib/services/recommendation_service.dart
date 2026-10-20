@@ -27,8 +27,23 @@ class RecommendationService {
   /// Realistic portion steps for Indian foods (in grams/ml)
   static List<double> getPortionStepsForFood(FoodItem food) {
     final lowerName = food.name.toLowerCase();
+    if (lowerName.contains('egg white')) {
+      return [66.0, 99.0, 132.0, 198.0]; // 2, 3, 4, or 6 egg whites
+    }
     if (lowerName.contains('egg')) {
-      return [50.0, 100.0, 150.0, 200.0]; // 1, 2, 3, or 4 eggs
+      return [50.0, 100.0, 150.0, 200.0, 300.0]; // 1, 2, 3, 4, or 6 whole eggs
+    }
+    if (lowerName.contains('chicken breast')) {
+      return [100.0, 150.0, 200.0, 250.0];
+    }
+    if (lowerName.contains('chicken')) {
+      return [100.0, 150.0, 200.0];
+    }
+    if (lowerName.contains('fish')) {
+      return [100.0, 150.0, 200.0];
+    }
+    if (lowerName.contains('mutton')) {
+      return [100.0, 150.0];
     }
     if (lowerName.contains('soya chunks') || lowerName.contains('sattu')) {
       return [30.0, 50.0, 75.0, 100.0];
@@ -37,18 +52,21 @@ class RecommendationService {
       return [200.0, 250.0, 300.0, 500.0];
     }
     if (lowerName.contains('paneer') || lowerName.contains('tofu')) {
-      return [50.0, 100.0, 150.0];
+      return [50.0, 100.0, 150.0, 200.0];
     }
     if (lowerName.contains('peanut') || lowerName.contains('seed')) {
       return [25.0, 35.0, 50.0];
     }
-    if (lowerName.contains('chicken') || lowerName.contains('fish')) {
-      return [100.0, 150.0, 200.0];
-    }
     if (lowerName.contains('dal') ||
         lowerName.contains('chana') ||
-        lowerName.contains('rajma')) {
+        lowerName.contains('rajma') ||
+        lowerName.contains('chole')) {
       return [100.0, 150.0, 200.0];
+    }
+    if (lowerName.contains('rice') ||
+        lowerName.contains('roti') ||
+        lowerName.contains('oats')) {
+      return [50.0, 100.0, 150.0];
     }
     return [50.0, 100.0, 150.0];
   }
@@ -95,21 +113,70 @@ class RecommendationService {
       return [];
     }
 
-    // Sort by protein efficiency (g/₹) to prioritize budget-friendly proteins
-    eligibleFoods.sort((a, b) {
-      final effA = a.proteinPerRupee ?? 0.0;
-      final effB = b.proteinPerRupee ?? 0.0;
-      return effB.compareTo(effA);
-    });
+    // Build targeted candidate pool ensuring diet-specific protein sources are always represented
+    final List<FoodItem> candidatePool;
+    if (criteria.dietaryPreference == AppConstants.dietNonVeg) {
+      final nonVegItems = eligibleFoods
+          .where((f) => f.dietaryClassification == AppConstants.dietNonVeg)
+          .toList();
+      final eggItems = eligibleFoods
+          .where((f) => f.dietaryClassification == AppConstants.dietEgg)
+          .toList();
+      final vegPairings = eligibleFoods
+          .where((f) => f.dietaryClassification == AppConstants.dietVeg)
+          .toList()
+        ..sort((a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0));
 
-    // Take the top pool to keep combinatorial search bounded and fast
-    final candidatePool = eligibleFoods.take(18).toList();
+      candidatePool = [
+        ...nonVegItems,
+        ...eggItems,
+        ...vegPairings.take(12),
+      ];
+    } else if (criteria.dietaryPreference == AppConstants.dietEgg) {
+      final eggItems = eligibleFoods
+          .where((f) => f.dietaryClassification == AppConstants.dietEgg)
+          .toList();
+      final vegPairings = eligibleFoods
+          .where((f) => f.dietaryClassification == AppConstants.dietVeg)
+          .toList()
+        ..sort((a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0));
+
+      candidatePool = [
+        ...eggItems,
+        ...vegPairings.take(16),
+      ];
+    } else {
+      final vegItems = eligibleFoods
+          .where((f) => f.dietaryClassification == AppConstants.dietVeg)
+          .toList()
+        ..sort((a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0));
+
+      candidatePool = vegItems.take(20).toList();
+    }
 
     final List<RecommendationPlan> feasiblePlans = [];
     final List<RecommendationPlan> partialPlans = [];
 
     // Helper to evaluate and collect candidate items
     void evaluateCombination(List<RecommendationItem> items) {
+      // Enforce dietary integrity
+      if (criteria.dietaryPreference == AppConstants.dietNonVeg) {
+        final hasNonVeg = items.any(
+          (i) => i.food.dietaryClassification == AppConstants.dietNonVeg,
+        );
+        if (!hasNonVeg) return;
+      } else if (criteria.dietaryPreference == AppConstants.dietEgg) {
+        final hasEgg = items.any(
+          (i) => i.food.dietaryClassification == AppConstants.dietEgg,
+        );
+        if (!hasEgg) return;
+      } else if (criteria.dietaryPreference == AppConstants.dietVeg) {
+        final allVeg = items.every(
+          (i) => i.food.dietaryClassification == AppConstants.dietVeg,
+        );
+        if (!allVeg) return;
+      }
+
       final totalCost = items.fold(0.0, (sum, i) => sum + i.cost);
       if (totalCost > criteria.remainingBudget) return;
 
@@ -120,11 +187,10 @@ class RecommendationService {
 
       final totalProtein = items.fold(0.0, (sum, i) => sum + i.protein);
       final coverage = totalProtein / criteria.remainingProteinTarget;
-
       final eff = totalCost > 0 ? totalProtein / totalCost : 0.0;
 
-      if (coverage >= 0.85) {
-        // Meets at least 85% of target within budget: Feasible solution
+      if (coverage >= 0.80) {
+        // Meets at least 80% of target within budget: Feasible solution
         final overshoot = max(
           0.0,
           totalProtein - criteria.remainingProteinTarget,
@@ -135,6 +201,7 @@ class RecommendationService {
           efficiency: eff,
           itemsCount: items.length,
           overshoot: overshoot,
+          diet: criteria.dietaryPreference,
         );
 
         feasiblePlans.add(
@@ -149,7 +216,7 @@ class RecommendationService {
           ),
         );
       } else {
-        // Below 85% target: Collect for fallback in case budget cannot achieve 85%
+        // Below target: Collect for fallback if budget cannot reach 80%
         partialPlans.add(
           RecommendationPlan(
             id: 'partial_${items.map((i) => '${i.food.id}_${i.quantity.toInt()}').join('-')}',
@@ -158,19 +225,21 @@ class RecommendationService {
             maxBudget: criteria.remainingBudget,
             maxCalories: criteria.maxCalories,
             rankReason:
-                'Closest budget match providing ${totalProtein.toStringAsFixed(1)}g protein.',
+                'Delivers ${totalProtein.toStringAsFixed(1)}g protein for ₹${totalCost.toStringAsFixed(0)}.',
             isFeasible: false,
             infeasibilityNote:
-                'Budget of ₹${criteria.remainingBudget.toStringAsFixed(0)} is limited. This delivers the maximum feasible protein within your budget.',
+                'Budget of ₹${criteria.remainingBudget.toStringAsFixed(0)} is tight for ${criteria.remainingProteinTarget.toStringAsFixed(0)}g protein. This delivers the maximum feasible protein.',
           ),
         );
       }
     }
 
     // 1-item combinations
-    for (final food in candidatePool) {
-      for (final portion in getPortionStepsForFood(food)) {
-        evaluateCombination([RecommendationItem.fromFood(food, portion)]);
+    if (criteria.maxItems == 1 || criteria.maxItems >= 1) {
+      for (final food in candidatePool) {
+        for (final portion in getPortionStepsForFood(food)) {
+          evaluateCombination([RecommendationItem.fromFood(food, portion)]);
+        }
       }
     }
 
@@ -192,48 +261,76 @@ class RecommendationService {
       }
     }
 
-    // 3-item combinations (sample high efficiency top candidates)
+    // 3-item combinations
     if (criteria.maxItems >= 3 && candidatePool.length >= 3) {
-      final topSub = candidatePool.take(8).toList();
+      final topSub = candidatePool.take(10).toList();
       for (int i = 0; i < topSub.length; i++) {
         for (int j = i + 1; j < topSub.length; j++) {
           for (int k = j + 1; k < topSub.length; k++) {
-            evaluateCombination([
-              RecommendationItem.fromFood(
-                topSub[i],
-                getPortionStepsForFood(topSub[i]).first,
-              ),
-              RecommendationItem.fromFood(
-                topSub[j],
-                getPortionStepsForFood(topSub[j]).first,
-              ),
-              RecommendationItem.fromFood(
-                topSub[k],
-                getPortionStepsForFood(topSub[k]).first,
-              ),
-            ]);
+            final portionsA = getPortionStepsForFood(topSub[i]).take(2);
+            final portionsB = getPortionStepsForFood(topSub[j]).take(2);
+            final portionsC = getPortionStepsForFood(topSub[k]).take(2);
+            for (final pA in portionsA) {
+              for (final pB in portionsB) {
+                for (final pC in portionsC) {
+                  evaluateCombination([
+                    RecommendationItem.fromFood(topSub[i], pA),
+                    RecommendationItem.fromFood(topSub[j], pB),
+                    RecommendationItem.fromFood(topSub[k], pC),
+                  ]);
+                }
+              }
+            }
           }
         }
       }
     }
 
     if (feasiblePlans.isNotEmpty) {
-      // Rank feasible plans: balance high protein efficiency (g/₹), close target match, and cost savings
       feasiblePlans.sort((a, b) {
         final scoreA = _scorePlan(a, criteria);
         final scoreB = _scorePlan(b, criteria);
         return scoreB.compareTo(scoreA);
       });
 
-      // Remove near-identical duplicates and return top 6
       return _deduplicatePlans(feasiblePlans).take(6).toList();
-    } else {
-      // If budget is too tight to reach target, return best feasible alternatives
-      partialPlans.sort((a, b) {
-        // Sort by highest protein reached within budget
-        return b.totalProtein.compareTo(a.totalProtein);
-      });
+    } else if (partialPlans.isNotEmpty) {
+      partialPlans.sort((a, b) => b.totalProtein.compareTo(a.totalProtein));
       return _deduplicatePlans(partialPlans).take(4).toList();
+    } else {
+      // In extreme tight budget, offer general best budget protein alternative
+      final vegFallbacks = allFoods
+          .where(
+            (f) =>
+                f.dietaryClassification == AppConstants.dietVeg &&
+                f.estimatedUnitPrice > 0,
+          )
+          .toList()
+        ..sort(
+          (a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0),
+        );
+      for (final f in vegFallbacks.take(3)) {
+        for (final p in getPortionStepsForFood(f)) {
+          final cost = (f.estimatedUnitPrice * p) / f.priceQuantityBasis;
+          if (cost <= criteria.remainingBudget) {
+            final prot = (f.proteinPer100 * p) / 100.0;
+            partialPlans.add(
+              RecommendationPlan(
+                id: 'budget_alt_${f.id}_$p',
+                items: [RecommendationItem.fromFood(f, p)],
+                targetProtein: criteria.remainingProteinTarget,
+                maxBudget: criteria.remainingBudget,
+                rankReason:
+                    'Budget Alternative: ${f.name} delivers ${prot.toStringAsFixed(1)}g protein for ₹${cost.toStringAsFixed(1)}.',
+                isFeasible: false,
+                infeasibilityNote:
+                    'Your ₹${criteria.remainingBudget.toStringAsFixed(0)} budget is too limited for ${criteria.dietaryPreference} targets. Consider this high-efficiency staple.',
+              ),
+            );
+          }
+        }
+      }
+      return _deduplicatePlans(partialPlans).take(3).toList();
     }
   }
 
@@ -248,19 +345,22 @@ class RecommendationService {
 
     // Target match: 1.0 is exact match
     final coverage = protein / criteria.remainingProteinTarget;
-    final targetMatchPenalty = (coverage - 1.0).abs() * 20.0;
+    final targetMatchPenalty = (coverage - 1.0).abs() * 25.0;
 
-    // Cost efficiency bonus: higher g/₹ is heavily rewarded
-    final efficiencyBonus = min(eff, 4.0) * 15.0;
+    // Cost efficiency bonus
+    final efficiencyBonus = min(eff, 3.0) * 10.0;
 
-    // Budget savings bonus: saving money within target
+    // Budget savings bonus
     final budgetSavingsRatio = max(
       0.0,
       (criteria.remainingBudget - cost) / criteria.remainingBudget,
     );
     final savingsBonus = budgetSavingsRatio * 15.0;
 
-    return 100.0 + efficiencyBonus + savingsBonus - targetMatchPenalty;
+    // Preference for matching exact requested combo size
+    final sizeBonus = (plan.items.length == criteria.maxItems) ? 25.0 : 0.0;
+
+    return 100.0 + efficiencyBonus + savingsBonus + sizeBonus - targetMatchPenalty;
   }
 
   static String _generateFeasibleExplanation({
@@ -269,12 +369,17 @@ class RecommendationService {
     required double efficiency,
     required int itemsCount,
     required double overshoot,
+    required String diet,
   }) {
     final costStr = '₹${totalCost.toStringAsFixed(1)}';
     final pStr = '${totalProtein.toStringAsFixed(1)}g';
     final effStr = '${efficiency.toStringAsFixed(2)} g/₹';
 
-    if (efficiency >= 1.5) {
+    if (diet == AppConstants.dietNonVeg) {
+      return 'Non-Veg Protein Hero: Delivers $pStr complete animal protein for $costStr ($effStr).';
+    } else if (diet == AppConstants.dietEgg) {
+      return 'Egg Protein Combo: High biological value delivering $pStr protein for $costStr ($effStr).';
+    } else if (efficiency >= 1.5) {
       return 'Super Budget Saver: High efficiency ($effStr). Delivers $pStr protein for just $costStr.';
     } else if (itemsCount == 1) {
       return 'Simple Single-Food Serving: Convenient 1-item solution delivering $pStr protein for $costStr ($effStr).';

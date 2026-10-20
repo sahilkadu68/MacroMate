@@ -44,7 +44,10 @@ class MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 680;
+
+    final content = Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -81,5 +84,28 @@ class MainScaffoldState extends State<MainScaffold> {
         ],
       ),
     );
+
+    if (isDesktop) {
+      return Container(
+        color: const Color(0xFFF1F5F9), // modern cool slate background for desktop
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 640),
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRect(child: content),
+          ),
+        ),
+      );
+    }
+
+    return content;
   }
 }

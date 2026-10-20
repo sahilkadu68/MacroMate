@@ -36,9 +36,10 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_initializedWithDefaults) {
-      final profile = Provider.of<ProfileProvider>(context).profile;
-      final mealSummary = Provider.of<MealProvider>(context).dailyTotals;
+    final foodProvider = Provider.of<FoodProvider>(context);
+    if (!_initializedWithDefaults && foodProvider.allFoods.isNotEmpty) {
+      final profile = Provider.of<ProfileProvider>(context, listen: false).profile;
+      final mealSummary = Provider.of<MealProvider>(context, listen: false).dailyTotals;
       final remaining = NutritionService.calculateRemainingTargets(
         profile: profile,
         consumed: mealSummary,
@@ -56,9 +57,9 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
       _dietPreference = profile.dietaryPreference;
       _initializedWithDefaults = true;
 
-      // Automatically generate initial recommendations
+      // Automatically generate initial recommendations once foods are available
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _triggerSearch();
+        if (mounted) _triggerSearch();
       });
     }
   }
@@ -181,6 +182,7 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
                               labelText: 'Protein Needed',
                               suffixText: 'g',
                             ),
+                            onSubmitted: (_) => _triggerSearch(),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -194,6 +196,7 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
                               labelText: 'Max Budget',
                               prefixText: '₹ ',
                             ),
+                            onSubmitted: (_) => _triggerSearch(),
                           ),
                         ),
                       ],
@@ -214,6 +217,7 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
                               hintText: 'Optional',
                               suffixText: 'kcal',
                             ),
+                            onSubmitted: (_) => _triggerSearch(),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -237,6 +241,7 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
                             onChanged: (val) {
                               if (val != null) {
                                 setState(() => _dietPreference = val);
+                                _triggerSearch();
                               }
                             },
                           ),
@@ -265,7 +270,10 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
                             selected: selected,
                             visualDensity: VisualDensity.compact,
                             onSelected: (val) {
-                              if (val) setState(() => _maxItems = count);
+                              if (val) {
+                                setState(() => _maxItems = count);
+                                _triggerSearch();
+                              }
                             },
                           );
                         }),

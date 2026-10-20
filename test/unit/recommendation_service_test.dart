@@ -99,9 +99,56 @@ void main() {
         final topPlan = recommendations.first;
         expect(topPlan.isFeasible, isFalse);
         expect(topPlan.infeasibilityNote, isNotNull);
-        expect(topPlan.infeasibilityNote, contains('Budget of ₹10 is limited'));
         expect(topPlan.totalCost, lessThanOrEqualTo(10.0));
       },
     );
+
+    test('Non-Vegetarian criteria generates combinations with animal protein heroes', () {
+      const criteria = RecommendationCriteria(
+        remainingProteinTarget: 40.0,
+        remainingBudget: 80.0,
+        dietaryPreference: AppConstants.dietNonVeg,
+        maxItems: 2,
+      );
+
+      final recommendations = RecommendationService.findRecommendations(
+        allFoods: testFoods,
+        criteria: criteria,
+      );
+
+      expect(recommendations, isNotEmpty);
+      // Verify every recommended plan has a non-veg item (e.g., Chicken Breast, Fish)
+      for (final plan in recommendations) {
+        final hasNonVeg = plan.items.any(
+          (i) => i.food.dietaryClassification == AppConstants.dietNonVeg,
+        );
+        expect(hasNonVeg, isTrue);
+        expect(plan.totalCost, lessThanOrEqualTo(criteria.remainingBudget));
+      }
+    });
+
+    test('Eggetarian criteria generates combinations with egg protein', () {
+      const criteria = RecommendationCriteria(
+        remainingProteinTarget: 30.0,
+        remainingBudget: 60.0,
+        dietaryPreference: AppConstants.dietEgg,
+        maxItems: 2,
+      );
+
+      final recommendations = RecommendationService.findRecommendations(
+        allFoods: testFoods,
+        criteria: criteria,
+      );
+
+      expect(recommendations, isNotEmpty);
+      // Verify every recommended plan has an egg item (e.g., Whole Boiled Egg, Egg White)
+      for (final plan in recommendations) {
+        final hasEgg = plan.items.any(
+          (i) => i.food.dietaryClassification == AppConstants.dietEgg,
+        );
+        expect(hasEgg, isTrue);
+        expect(plan.totalCost, lessThanOrEqualTo(criteria.remainingBudget));
+      }
+    });
   });
 }

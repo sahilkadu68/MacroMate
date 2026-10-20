@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../core/constants/app_constants.dart';
 import '../data/models/food_item.dart';
 import '../data/repositories/food_repository.dart';
 
@@ -110,11 +111,12 @@ class FoodProvider with ChangeNotifier {
     if (_selectedDietaryPreference != null &&
         _selectedDietaryPreference!.isNotEmpty) {
       results = results.where((f) {
-        if (_selectedDietaryPreference == 'Vegetarian') {
-          return f.dietaryClassification == 'Vegetarian';
-        } else if (_selectedDietaryPreference == 'Eggetarian') {
-          return f.dietaryClassification == 'Vegetarian' ||
-              f.dietaryClassification == 'Eggetarian';
+        if (_selectedDietaryPreference == AppConstants.dietVeg) {
+          return f.dietaryClassification == AppConstants.dietVeg;
+        } else if (_selectedDietaryPreference == AppConstants.dietEgg) {
+          return f.dietaryClassification == AppConstants.dietEgg;
+        } else if (_selectedDietaryPreference == AppConstants.dietNonVeg) {
+          return f.dietaryClassification == AppConstants.dietNonVeg;
         }
         return true;
       }).toList();
