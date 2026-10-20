@@ -38,7 +38,7 @@ class DashboardScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             Text(
-              'Welcome back, ${profile.displayName}',
+              '${profile.displayName} · ${profile.dietaryPreference}',
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
@@ -86,6 +86,10 @@ class DashboardScreen extends StatelessWidget {
                 onOpenProteinFinder: () => _openProteinFinder(context),
               ),
               const SizedBox(height: 12),
+
+              // First-time or empty day helper card
+              if (mealProvider.dailyEntries.isEmpty)
+                _buildGettingStartedCard(context, selectedDate),
 
               // Dynamic Daily Insights Card (if meals are logged)
               if (mealProvider.dailyEntries.isNotEmpty)
@@ -155,9 +159,59 @@ class DashboardScreen extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         onPressed: () =>
-            _openLogMeal(context, AppConstants.mealLunch, selectedDate),
+            _openLogMeal(context, AppConstants.mealBreakfast, selectedDate),
         icon: const Icon(Icons.add),
-        label: const Text('Log Food'),
+        label: const Text('Log Meal'),
+      ),
+    );
+  }
+
+  Widget _buildGettingStartedCard(BuildContext context, DateTime selectedDate) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: AppColors.primaryContainer.withAlpha(50),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.wb_sunny, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Ready to start today?',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Log your breakfast or explore budget-friendly protein combos.',
+                      style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withAlpha(150)),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  minimumSize: const Size(0, 32),
+                ),
+                onPressed: () => _openLogMeal(context, AppConstants.mealBreakfast, selectedDate),
+                child: const Text('Log Food', style: TextStyle(fontSize: 11)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

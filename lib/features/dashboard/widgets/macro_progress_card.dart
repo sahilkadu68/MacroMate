@@ -1,6 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../services/nutrition_service.dart';
 
@@ -17,23 +17,10 @@ class MacroProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final remaining = NutritionService.calculateRemainingTargets(
-      profile: profile,
-      consumed: summary,
-    );
-
-    final calRatio = profile.calorieTarget > 0
-        ? (summary.totalCalories / profile.calorieTarget).clamp(0.0, 1.0)
-        : 0.0;
-    final protRatio = profile.proteinTarget > 0
-        ? (summary.totalProtein / profile.proteinTarget).clamp(0.0, 1.0)
-        : 0.0;
-    final carbRatio = profile.carbohydrateTarget > 0
-        ? (summary.totalCarbs / profile.carbohydrateTarget).clamp(0.0, 1.0)
-        : 0.0;
-    final fatRatio = profile.fatTarget > 0
-        ? (summary.totalFat / profile.fatTarget).clamp(0.0, 1.0)
-        : 0.0;
+    final calTarget = profile.calorieTarget > 0 ? profile.calorieTarget : 2000.0;
+    final calConsumed = summary.totalCalories;
+    final calRemaining = max(0.0, calTarget - calConsumed);
+    final calRatio = (calConsumed / calTarget).clamp(0.0, 1.0);
 
     return Card(
       child: Padding(
@@ -46,162 +33,104 @@ class MacroProgressCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Daily Nutrition Targets',
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    'Daily Nutrition Progress',
+                    style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${Formatters.percentage(summary.totalProtein / (profile.proteinTarget > 0 ? profile.proteinTarget : 1))} Protein Hit',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                Text(
+                  '${calConsumed.round()} / ${calTarget.round()} kcal',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withAlpha(160),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // Calories Spotlight
             Row(
               children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: CircularProgressIndicator(
-                        value: calRatio,
-                        strokeWidth: 8,
-                        backgroundColor: AppColors.calories.withAlpha(30),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.calories,
-                        ),
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.local_fire_department,
-                          size: 18,
-                          color: AppColors.calories,
-                        ),
-                        Text(
-                          '${summary.totalCalories.round()}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                // Single Calorie Circular Gauge
+                SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 90,
+                        height: 90,
+                        child: CircularProgressIndicator(
+                          value: calRatio,
+                          strokeWidth: 8,
+                          backgroundColor: AppColors.calories.withAlpha(30),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.calories,
                           ),
+                          strokeCap: StrokeCap.round,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${calRemaining.round()}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const Text(
+                            'kcal left',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 18),
+
+                // Clean Macro Target Progress Bars
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Calories Consumed',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withAlpha(150),
-                        ),
+                      _buildMacroBar(
+                        label: 'Protein',
+                        consumed: summary.totalProtein,
+                        target: profile.proteinTarget,
+                        color: AppColors.protein,
+                        unit: 'g',
                       ),
-                      const SizedBox(height: 2),
-                      RichText(
-                        text: TextSpan(
-                          style: TextStyle(color: theme.colorScheme.onSurface),
-                          children: [
-                            TextSpan(
-                              text: '${summary.totalCalories.round()} ',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            TextSpan(
-                              text: '/ ${profile.calorieTarget.round()} kcal',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: theme.colorScheme.onSurface.withAlpha(
-                                  150,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 10),
+                      _buildMacroBar(
+                        label: 'Carbs',
+                        consumed: summary.totalCarbs,
+                        target: profile.carbohydrateTarget,
+                        color: AppColors.carbs,
+                        unit: 'g',
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        remaining.remainingCalories > 0
-                            ? '${remaining.remainingCalories.round()} kcal remaining today'
-                            : 'Target achieved! (+${(summary.totalCalories - profile.calorieTarget).round()} surplus)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: remaining.remainingCalories > 0
-                              ? AppColors.calories
-                              : AppColors.primary,
-                        ),
+                      const SizedBox(height: 10),
+                      _buildMacroBar(
+                        label: 'Fat',
+                        consumed: summary.totalFat,
+                        target: profile.fatTarget,
+                        color: AppColors.fat,
+                        unit: 'g',
                       ),
                     ],
                   ),
                 ),
               ],
-            ),
-
-            const SizedBox(height: 20),
-            const Divider(height: 1),
-            const SizedBox(height: 16),
-
-            // Three Macro Progress Bars
-            _buildMacroRow(
-              context: context,
-              label: 'Protein',
-              consumed: summary.totalProtein,
-              target: profile.proteinTarget,
-              ratio: protRatio,
-              color: AppColors.protein,
-              unit: 'g',
-            ),
-            const SizedBox(height: 12),
-            _buildMacroRow(
-              context: context,
-              label: 'Carbs',
-              consumed: summary.totalCarbs,
-              target: profile.carbohydrateTarget,
-              ratio: carbRatio,
-              color: AppColors.carbs,
-              unit: 'g',
-            ),
-            const SizedBox(height: 12),
-            _buildMacroRow(
-              context: context,
-              label: 'Fat',
-              consumed: summary.totalFat,
-              target: profile.fatTarget,
-              ratio: fatRatio,
-              color: AppColors.fat,
-              unit: 'g',
             ),
           ],
         ),
@@ -209,17 +138,15 @@ class MacroProgressCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMacroRow({
-    required BuildContext context,
+  Widget _buildMacroBar({
     required String label,
     required double consumed,
     required double target,
-    required double ratio,
     required Color color,
     required String unit,
   }) {
-    final theme = Theme.of(context);
-    final remaining = (target - consumed).clamp(0.0, 9999.0);
+    final validTarget = target > 0 ? target : 1.0;
+    final ratio = (consumed / validTarget).clamp(0.0, 1.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,65 +154,26 @@ class MacroProgressCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-            Flexible(
-              child: RichText(
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 12,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '${consumed.toStringAsFixed(1)}$unit ',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(
-                      text: '/ ${target.toStringAsFixed(0)}$unit',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface.withAlpha(140),
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' (${remaining.toStringAsFixed(1)}$unit left)',
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
               ),
+            ),
+            Text(
+              '${consumed.round()}/${target.round()}$unit',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: ratio,
             minHeight: 6,
-            backgroundColor: color.withAlpha(35),
+            backgroundColor: color.withAlpha(25),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),

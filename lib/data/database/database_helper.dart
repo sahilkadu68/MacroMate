@@ -4,6 +4,8 @@ import 'package:sqflite/sqflite.dart';
 import '../models/activity_log.dart';
 import '../models/food_item.dart';
 import '../models/meal_entry.dart';
+import '../models/recipe.dart';
+import '../models/shopping_item.dart';
 import '../models/user_profile.dart';
 import '../models/water_log.dart';
 import '../models/weight_log.dart';
@@ -12,7 +14,7 @@ import 'database_factory_helper.dart';
 
 class DatabaseHelper {
   static const String dbName = 'macromate_india.db';
-  static const int dbVersion = 1;
+  static const int dbVersion = 2;
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -27,6 +29,9 @@ class DatabaseHelper {
   final List<WaterLog> _memWaterLogs = [];
   final List<WeightLog> _memWeightLogs = [];
   final List<ActivityLog> _memActivityLogs = [];
+  final List<Recipe> _memRecipes = [];
+  final List<ShoppingItem> _memShoppingItems = [];
+  final Set<int> _memFavoriteFoodIds = {};
   int _nextId = 1000;
 
   bool get isFallbackMode => _isFallbackMode;
@@ -179,6 +184,60 @@ class DatabaseHelper {
       )
     ''');
 
+    // 7. recipes
+    await db.execute('''
+      CREATE TABLE recipes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        servings INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    // 8. recipe_ingredients
+    await db.execute('''
+      CREATE TABLE recipe_ingredients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        recipe_id INTEGER NOT NULL,
+        food_id INTEGER,
+        food_name_snapshot TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        measurement_unit TEXT NOT NULL,
+        calories_snapshot REAL NOT NULL,
+        protein_snapshot REAL NOT NULL,
+        carbs_snapshot REAL NOT NULL,
+        fat_snapshot REAL NOT NULL,
+        cost_snapshot REAL NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (recipe_id) REFERENCES recipes (id) ON DELETE CASCADE,
+        FOREIGN KEY (food_id) REFERENCES foods (id) ON DELETE SET NULL
+      )
+    ''');
+
+    // 9. shopping_items
+    await db.execute('''
+      CREATE TABLE shopping_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit TEXT NOT NULL,
+        is_purchased INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+
+    // 10. favorite_foods
+    await db.execute('''
+      CREATE TABLE favorite_foods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        food_id INTEGER NOT NULL UNIQUE,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (food_id) REFERENCES foods (id) ON DELETE CASCADE
+      )
+    ''');
+
     // Create Indexes for performant date and category filtering
     await db.execute(
       'CREATE INDEX idx_meal_entries_date ON meal_entries(entry_date)',
@@ -197,13 +256,70 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX idx_activity_date ON activity_logs(activity_date)',
     );
+    await db.execute(
+      'CREATE INDEX idx_recipe_ing_recipe ON recipe_ingredients(recipe_id)',
+    );
 
     // Seed Initial Data
     await _seedDatabase(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Schema migration hook for future versions
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS recipes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          servings INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS recipe_ingredients (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          recipe_id INTEGER NOT NULL,
+          food_id INTEGER,
+          food_name_snapshot TEXT NOT NULL,
+          quantity REAL NOT NULL,
+          measurement_unit TEXT NOT NULL,
+          calories_snapshot REAL NOT NULL,
+          protein_snapshot REAL NOT NULL,
+          carbs_snapshot REAL NOT NULL,
+          fat_snapshot REAL NOT NULL,
+          cost_snapshot REAL NOT NULL,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (recipe_id) REFERENCES recipes (id) ON DELETE CASCADE,
+          FOREIGN KEY (food_id) REFERENCES foods (id) ON DELETE SET NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS shopping_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          quantity REAL NOT NULL,
+          unit TEXT NOT NULL,
+          is_purchased INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS favorite_foods (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          food_id INTEGER NOT NULL UNIQUE,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (food_id) REFERENCES foods (id) ON DELETE CASCADE
+        )
+      ''');
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_recipe_ing_recipe ON recipe_ingredients(recipe_id)',
+      );
+    }
   }
 
   Future<void> _seedDatabase(DatabaseExecutor db) async {
@@ -566,8 +682,43 @@ class DatabaseHelper {
   }
 
   Future<void> insertMultipleMealEntries(List<MealEntry> entries) async {
-    for (final entry in entries) {
-      await insertMealEntry(entry);
+    if (entries.isEmpty) return;
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      for (final entry in entries) {
+        final id = _nextId++;
+        _memMealEntries.add(entry.copyWith(id: id));
+      }
+      return;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        for (final entry in entries) {
+          final id = _nextId++;
+          _memMealEntries.add(entry.copyWith(id: id));
+        }
+        return;
+      }
+      await db.transaction((txn) async {
+        final batch = txn.batch();
+        for (final entry in entries) {
+          batch.insert('meal_entries', entry.toMap());
+        }
+        await batch.commit(noResult: true);
+      });
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        for (final entry in entries) {
+          final id = _nextId++;
+          _memMealEntries.add(entry.copyWith(id: id));
+        }
+        return;
+      }
+      rethrow;
     }
   }
 
@@ -1001,6 +1152,333 @@ class DatabaseHelper {
         _initMemoryFallback();
         _memActivityLogs.removeWhere((a) => a.id == id);
         return 1;
+      }
+      rethrow;
+    }
+  }
+
+  // ================= RECIPES CRUD =================
+  Future<List<Recipe>> getAllRecipes() async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return List.from(_memRecipes);
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return List.from(_memRecipes);
+      }
+      final recipeMaps = await db.query('recipes', orderBy: 'name ASC');
+      final List<Recipe> recipes = [];
+      for (final rMap in recipeMaps) {
+        final rId = rMap['id'] as int;
+        final ingMaps = await db.query(
+          'recipe_ingredients',
+          where: 'recipe_id = ?',
+          whereArgs: [rId],
+        );
+        final ingredients = ingMaps.map((m) => RecipeIngredient.fromMap(m)).toList();
+        recipes.add(Recipe.fromMap(rMap, ingredients: ingredients));
+      }
+      return recipes;
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return List.from(_memRecipes);
+      }
+      rethrow;
+    }
+  }
+
+  Future<int> insertRecipe(Recipe recipe) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final rId = _nextId++;
+      final savedIngredients = recipe.ingredients.map((i) {
+        return RecipeIngredient(
+          id: _nextId++,
+          recipeId: rId,
+          foodId: i.foodId,
+          foodName: i.foodName,
+          quantity: i.quantity,
+          measurementUnit: i.measurementUnit,
+          calories: i.calories,
+          protein: i.protein,
+          carbs: i.carbs,
+          fat: i.fat,
+          cost: i.cost,
+        );
+      }).toList();
+      _memRecipes.add(recipe.copyWith(id: rId, ingredients: savedIngredients));
+      return rId;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final rId = _nextId++;
+        _memRecipes.add(recipe.copyWith(id: rId));
+        return rId;
+      }
+      return await db.transaction<int>((txn) async {
+        final rId = await txn.insert('recipes', recipe.toMap());
+        final batch = txn.batch();
+        for (final ing in recipe.ingredients) {
+          batch.insert('recipe_ingredients', ing.toMap(rId));
+        }
+        await batch.commit(noResult: true);
+        return rId;
+      });
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final rId = _nextId++;
+        _memRecipes.add(recipe.copyWith(id: rId));
+        return rId;
+      }
+      rethrow;
+    }
+  }
+
+  Future<int> deleteRecipe(int id) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memRecipes.removeWhere((r) => r.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memRecipes.removeWhere((r) => r.id == id);
+        return 1;
+      }
+      return await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memRecipes.removeWhere((r) => r.id == id);
+        return 1;
+      }
+      rethrow;
+    }
+  }
+
+  // ================= SHOPPING ITEMS CRUD =================
+  Future<List<ShoppingItem>> getShoppingItems() async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return List.from(_memShoppingItems);
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return List.from(_memShoppingItems);
+      }
+      final maps = await db.query(
+        'shopping_items',
+        orderBy: 'is_purchased ASC, id DESC',
+      );
+      return maps.map((m) => ShoppingItem.fromMap(m)).toList();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return List.from(_memShoppingItems);
+      }
+      rethrow;
+    }
+  }
+
+  Future<int> insertShoppingItem(ShoppingItem item) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final id = _nextId++;
+      _memShoppingItems.add(item.copyWith(id: id));
+      return id;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memShoppingItems.add(item.copyWith(id: id));
+        return id;
+      }
+      return await db.insert('shopping_items', item.toMap());
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final id = _nextId++;
+        _memShoppingItems.add(item.copyWith(id: id));
+        return id;
+      }
+      rethrow;
+    }
+  }
+
+  Future<int> updateShoppingItem(ShoppingItem item) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      final idx = _memShoppingItems.indexWhere((i) => i.id == item.id);
+      if (idx != -1) _memShoppingItems[idx] = item;
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        final idx = _memShoppingItems.indexWhere((i) => i.id == item.id);
+        if (idx != -1) _memShoppingItems[idx] = item;
+        return 1;
+      }
+      return await db.update(
+        'shopping_items',
+        item.toMap(),
+        where: 'id = ?',
+        whereArgs: [item.id],
+      );
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        final idx = _memShoppingItems.indexWhere((i) => i.id == item.id);
+        if (idx != -1) _memShoppingItems[idx] = item;
+        return 1;
+      }
+      rethrow;
+    }
+  }
+
+  Future<int> deleteShoppingItem(int id) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memShoppingItems.removeWhere((i) => i.id == id);
+      return 1;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memShoppingItems.removeWhere((i) => i.id == id);
+        return 1;
+      }
+      return await db.delete('shopping_items', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memShoppingItems.removeWhere((i) => i.id == id);
+        return 1;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> clearPurchasedShoppingItems() async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      _memShoppingItems.removeWhere((i) => i.isPurchased);
+      return;
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        _memShoppingItems.removeWhere((i) => i.isPurchased);
+        return;
+      }
+      await db.delete('shopping_items', where: 'is_purchased = 1');
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        _memShoppingItems.removeWhere((i) => i.isPurchased);
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  // ================= FAVORITE FOODS CRUD =================
+  Future<Set<int>> getFavoriteFoodIds() async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      return Set.from(_memFavoriteFoodIds);
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        return Set.from(_memFavoriteFoodIds);
+      }
+      final maps = await db.query('favorite_foods', columns: ['food_id']);
+      return maps.map((m) => m['food_id'] as int).toSet();
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        return Set.from(_memFavoriteFoodIds);
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> toggleFavoriteFood(int foodId) async {
+    if (_isFallbackMode) {
+      _initMemoryFallback();
+      if (_memFavoriteFoodIds.contains(foodId)) {
+        _memFavoriteFoodIds.remove(foodId);
+        return false;
+      } else {
+        _memFavoriteFoodIds.add(foodId);
+        return true;
+      }
+    }
+    try {
+      final db = await database;
+      if (db == null) {
+        _initMemoryFallback();
+        if (_memFavoriteFoodIds.contains(foodId)) {
+          _memFavoriteFoodIds.remove(foodId);
+          return false;
+        } else {
+          _memFavoriteFoodIds.add(foodId);
+          return true;
+        }
+      }
+      final existing = await db.query(
+        'favorite_foods',
+        where: 'food_id = ?',
+        whereArgs: [foodId],
+      );
+      if (existing.isNotEmpty) {
+        await db.delete('favorite_foods', where: 'food_id = ?', whereArgs: [foodId]);
+        return false;
+      } else {
+        await db.insert('favorite_foods', {
+          'food_id': foodId,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        return true;
+      }
+    } catch (e) {
+      if (kIsWeb) {
+        _isFallbackMode = true;
+        _initMemoryFallback();
+        if (_memFavoriteFoodIds.contains(foodId)) {
+          _memFavoriteFoodIds.remove(foodId);
+          return false;
+        } else {
+          _memFavoriteFoodIds.add(foodId);
+          return true;
+        }
       }
       rethrow;
     }

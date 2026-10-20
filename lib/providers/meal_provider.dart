@@ -8,13 +8,15 @@ class MealProvider with ChangeNotifier {
 
   DateTime _selectedDate = DateTime.now();
   List<MealEntry> _dailyEntries = [];
+  List<MealEntry> _recentHistoryEntries = [];
   DailyNutritionSummary _dailyTotals = const DailyNutritionSummary();
   bool _isLoading = false;
   String? _errorMessage;
 
   MealProvider({MealRepository? repository})
-    : _repository = repository ?? MealRepository() {
+      : _repository = repository ?? MealRepository() {
     loadMealsForSelectedDate();
+    _loadRecentHistory();
   }
 
   DateTime get selectedDate => _selectedDate;
@@ -25,6 +27,27 @@ class MealProvider with ChangeNotifier {
 
   List<MealEntry> getEntriesForMealType(String mealType) {
     return _dailyEntries.where((e) => e.mealType == mealType).toList();
+  }
+
+  /// Unique food IDs logged in recent history (up to last 14 days)
+  List<int> get recentFoodIds {
+    final ids = <int>[];
+    for (final e in _recentHistoryEntries) {
+      if (e.foodId != null && !ids.contains(e.foodId!)) {
+        ids.add(e.foodId!);
+      }
+    }
+    return ids;
+  }
+
+  Future<void> _loadRecentHistory() async {
+    try {
+      final now = DateTime.now();
+      final twoWeeksAgo = now.subtract(const Duration(days: 14));
+      _recentHistoryEntries =
+          await _repository.getMealsBetweenDates(twoWeeksAgo, now);
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> setSelectedDate(DateTime date) async {
@@ -51,10 +74,10 @@ class MealProvider with ChangeNotifier {
   Future<void> addMeal(MealEntry entry) async {
     try {
       final id = await _repository.addMeal(entry);
-      // If the entry belongs to the currently viewed date, update state
       if (_isSameDay(entry.entryDate, _selectedDate)) {
         _dailyEntries.add(entry.copyWith(id: id));
         _dailyTotals = NutritionService.calculateDailyTotals(_dailyEntries);
+        _recentHistoryEntries.insert(0, entry.copyWith(id: id));
         notifyListeners();
       }
     } catch (e) {
@@ -65,9 +88,11 @@ class MealProvider with ChangeNotifier {
   }
 
   Future<void> addMultipleMeals(List<MealEntry> entries) async {
+    if (entries.isEmpty) return;
     try {
       await _repository.addMultipleMeals(entries);
       await loadMealsForSelectedDate();
+      await _loadRecentHistory();
     } catch (e) {
       _errorMessage = 'Failed to save meals: $e';
       notifyListeners();
@@ -101,6 +126,50 @@ class MealProvider with ChangeNotifier {
       _errorMessage = 'Failed to delete meal: $e';
       notifyListeners();
       rethrow;
+    }
+  }
+
+  /// Copies yesterday's entries for a given meal type into today's diary
+  Future<int> repeatYesterdayMeal(String mealType) async {
+    final yesterday = _selectedDate.subtract(const Duration(days: 1));
+    final yesterdayEntries = await _repository.getMealsForDate(yesterday);
+    final targetEntries =
+        yesterdayEntries.where((e) => e.mealType == mealType).toList();
+
+    if (targetEntries.isEmpty) return 0;
+
+    final clonedEntries = targetEntries.map((e) {
+      return e.copyWith(
+        id: null,
+        entryDate: _selectedDate,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }).toList();
+
+    await addMultipleMeals(clonedEntries);
+    return clonedEntries.length;
+  }
+
+  /// Copies a list of meal entries to a target date
+  Future<void> copyEntriesToDate(
+    List<MealEntry> entries,
+    DateTime targetDate, {
+    String? targetMealType,
+  }) async {
+    final cloned = entries.map((e) {
+      return e.copyWith(
+        id: null,
+        entryDate: targetDate,
+        mealType: targetMealType ?? e.mealType,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }).toList();
+
+    await _repository.addMultipleMeals(cloned);
+    if (_isSameDay(targetDate, _selectedDate)) {
+      await loadMealsForSelectedDate();
     }
   }
 

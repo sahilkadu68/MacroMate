@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'features/navigation/main_scaffold.dart';
 import 'providers/food_provider.dart';
 import 'providers/meal_provider.dart';
+import 'providers/plan_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/protein_finder_provider.dart';
 import 'providers/tracking_provider.dart';
@@ -21,6 +22,7 @@ class MacroMateApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MealProvider()),
         ChangeNotifierProvider(create: (_) => TrackingProvider()),
         ChangeNotifierProvider(create: (_) => ProteinFinderProvider()),
+        ChangeNotifierProvider(create: (_) => PlanProvider()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,

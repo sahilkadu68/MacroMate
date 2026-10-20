@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/food_item.dart';
+import '../../providers/food_provider.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/metric_badge.dart';
 import '../meal_logging/log_meal_screen.dart';
@@ -19,10 +21,72 @@ class FoodDetailSheet extends StatelessWidget {
     this.onEdited,
   });
 
+  void _showEditPriceDialog(BuildContext context) {
+    final foodProvider = Provider.of<FoodProvider>(context, listen: false);
+    final controller = TextEditingController(text: food.estimatedUnitPrice.toStringAsFixed(1));
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('Edit Price: ${food.name}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Update price to match your local market/mess. Price is per ${food.priceQuantityBasis.toInt()}${food.measurementUnit}.',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Local Price (₹)',
+                  prefixText: '₹ ',
+                  suffixText: '/ ${food.priceQuantityBasis.toInt()}${food.measurementUnit}',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newPrice = double.tryParse(controller.text.trim());
+                if (newPrice != null && newPrice > 0 && food.id != null) {
+                  await foodProvider.updateFoodPrice(food.id!, newPrice);
+                  if (context.mounted) {
+                    Navigator.pop(ctx);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.primary,
+                        content: Text('Updated price for ${food.name} to ₹$newPrice!'),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Price'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final foodProvider = Provider.of<FoodProvider>(context);
     final eff = food.proteinPerRupee;
+    final isFav = foodProvider.isFavorite(food.id);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -57,6 +121,16 @@ class FoodDetailSheet extends StatelessWidget {
                       fontSize: 18,
                     ),
                   ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    isFav ? Icons.favorite : Icons.favorite_border,
+                    color: isFav ? Colors.red : Colors.grey,
+                  ),
+                  tooltip: isFav ? 'Remove from Favourites' : 'Add to Favourites',
+                  onPressed: () {
+                    if (food.id != null) foodProvider.toggleFavorite(food.id!);
+                  },
                 ),
                 DietaryBadge(classification: food.dietaryClassification),
               ],
@@ -143,19 +217,38 @@ class FoodDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Price Basis & Source Note
-            Text(
-              'Price Reference Basis',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface.withAlpha(160),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '₹${food.estimatedUnitPrice.toStringAsFixed(1)} per ${food.priceQuantityBasis.toInt()}${food.measurementUnit}',
-              style: const TextStyle(fontSize: 13),
+            // Price Reference Basis with Edit Local Price button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Price Reference Basis',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface.withAlpha(160),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '₹${food.estimatedUnitPrice.toStringAsFixed(1)} per ${food.priceQuantityBasis.toInt()}${food.measurementUnit}',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: const Size(0, 32),
+                  ),
+                  icon: const Icon(Icons.edit_note, size: 16),
+                  label: const Text('Edit Local Price', style: TextStyle(fontSize: 11)),
+                  onPressed: () => _showEditPriceDialog(context),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
 
@@ -191,8 +284,7 @@ class FoodDetailSheet extends StatelessWidget {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) =>
-                              LogMealScreen(entryDate: DateTime.now()),
+                          builder: (_) => LogMealScreen(entryDate: DateTime.now()),
                         ),
                       );
                     },
