@@ -87,7 +87,9 @@ class MainScaffoldState extends State<MainScaffold> {
 
     if (isDesktop) {
       return Container(
-        color: const Color(0xFFF1F5F9), // modern cool slate background for desktop
+        color: const Color(
+          0xFFF1F5F9,
+        ), // modern cool slate background for desktop
         child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 640),

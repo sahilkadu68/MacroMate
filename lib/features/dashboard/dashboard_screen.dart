@@ -182,7 +182,11 @@ class DashboardScreen extends StatelessWidget {
                   color: AppColors.primary.withAlpha(20),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.wb_sunny, color: AppColors.primary, size: 20),
+                child: const Icon(
+                  Icons.wb_sunny,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -191,22 +195,35 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Ready to start today?',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Log your breakfast or explore budget-friendly protein combos.',
-                      style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withAlpha(150)),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurface.withAlpha(150),
+                      ),
                     ),
                   ],
                 ),
               ),
               OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   minimumSize: const Size(0, 32),
                 ),
-                onPressed: () => _openLogMeal(context, AppConstants.mealBreakfast, selectedDate),
+                onPressed: () => _openLogMeal(
+                  context,
+                  AppConstants.mealBreakfast,
+                  selectedDate,
+                ),
                 child: const Text('Log Food', style: TextStyle(fontSize: 11)),
               ),
             ],

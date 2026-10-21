@@ -74,21 +74,24 @@ void main() {
       expect(names.contains('Chicken Breast (Boneless, Cooked)'), isFalse);
     });
 
-    test('Dietary filter "Non-Veg" isolates animal meat & fish items exclusively', () {
-      foodProvider.setDietaryFilter(AppConstants.dietNonVeg);
-      expect(foodProvider.selectedDietaryPreference, AppConstants.dietNonVeg);
-      expect(foodProvider.foods, isNotEmpty);
+    test(
+      'Dietary filter "Non-Veg" isolates animal meat & fish items exclusively',
+      () {
+        foodProvider.setDietaryFilter(AppConstants.dietNonVeg);
+        expect(foodProvider.selectedDietaryPreference, AppConstants.dietNonVeg);
+        expect(foodProvider.foods, isNotEmpty);
 
-      for (final food in foodProvider.foods) {
-        expect(food.dietaryClassification, AppConstants.dietNonVeg);
-      }
+        for (final food in foodProvider.foods) {
+          expect(food.dietaryClassification, AppConstants.dietNonVeg);
+        }
 
-      final names = foodProvider.foods.map((f) => f.name).toList();
-      expect(names, contains('Chicken Breast (Boneless, Cooked)'));
-      expect(names, contains('Fish (Rohu / Katla, Pan Cooked)'));
-      expect(names.contains('Paneer (Fresh Cow Milk)'), isFalse);
-      expect(names.contains('Whole Boiled Egg (Large, ~50g)'), isFalse);
-    });
+        final names = foodProvider.foods.map((f) => f.name).toList();
+        expect(names, contains('Chicken Breast (Boiled / Grilled, Cooked)'));
+        expect(names, contains('Rohu Fish (Pan-Cooked / Curry)'));
+        expect(names.contains('Paneer (Fresh Cow Milk)'), isFalse);
+        expect(names.contains('Whole Boiled Egg (Large, ~50g)'), isFalse);
+      },
+    );
 
     test('Clearing dietary filter restores full catalogue', () {
       foodProvider.setDietaryFilter(AppConstants.dietVeg);
@@ -102,7 +105,8 @@ void main() {
       foodProvider.setSearchQuery('paneer');
       expect(foodProvider.foods, isNotEmpty);
       for (final food in foodProvider.foods) {
-        final matches = food.name.toLowerCase().contains('paneer') ||
+        final matches =
+            food.name.toLowerCase().contains('paneer') ||
             food.category.toLowerCase().contains('paneer') ||
             food.preparationBasis.toLowerCase().contains('paneer');
         expect(matches, isTrue);
@@ -113,7 +117,8 @@ void main() {
       foodProvider.setSortOption(FoodSortOption.protein);
       for (int i = 0; i < foodProvider.foods.length - 1; i++) {
         expect(
-          foodProvider.foods[i].proteinPer100 >= foodProvider.foods[i + 1].proteinPer100,
+          foodProvider.foods[i].proteinPer100 >=
+              foodProvider.foods[i + 1].proteinPer100,
           isTrue,
         );
       }
@@ -121,7 +126,8 @@ void main() {
       foodProvider.setSortOption(FoodSortOption.costAsc);
       for (int i = 0; i < foodProvider.foods.length - 1; i++) {
         expect(
-          foodProvider.foods[i].costPer100 <= foodProvider.foods[i + 1].costPer100,
+          foodProvider.foods[i].costPer100 <=
+              foodProvider.foods[i + 1].costPer100,
           isTrue,
         );
       }

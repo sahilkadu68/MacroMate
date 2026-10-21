@@ -8,7 +8,7 @@ class RecommendationCriteria {
   final double remainingProteinTarget; // g
   final double remainingBudget; // INR
   final double? maxCalories; // optional kcal limit
-  final String dietaryPreference; // Veg, Eggetarian, Non-Veg
+  final String dietaryPreference; // All, Veg, Eggetarian, Non-Veg
   final List<int> excludedFoodIds;
   final List<int> includedFoodIds;
   final int maxItems; // 1, 2, or 3 items
@@ -17,7 +17,7 @@ class RecommendationCriteria {
     required this.remainingProteinTarget,
     required this.remainingBudget,
     this.maxCalories,
-    this.dietaryPreference = AppConstants.dietVeg,
+    this.dietaryPreference = AppConstants.dietAll,
     this.excludedFoodIds = const [],
     this.includedFoodIds = const [],
     this.maxItems = 3,
@@ -29,13 +29,41 @@ class RecommendationService {
   static List<double> getPortionStepsForFood(FoodItem food) {
     final lowerName = food.name.toLowerCase();
     if (lowerName.contains('egg white')) {
-      return [66.0, 99.0, 132.0, 198.0]; // 2, 3, 4, or 6 egg whites
+      return [66.0, 99.0, 132.0, 198.0]; // 2, 3, 4, or 6 egg whites (~33g each)
+    }
+    if (lowerName.contains('egg') &&
+        food.measurementUnit == AppConstants.unitPiece) {
+      return [1.0, 2.0, 3.0, 4.0];
     }
     if (lowerName.contains('egg')) {
-      return [50.0, 100.0, 150.0, 200.0]; // 1, 2, 3, or 4 whole eggs
+      return [
+        50.0,
+        100.0,
+        150.0,
+        200.0,
+      ]; // 1, 2, 3, or 4 whole eggs (~50g each)
+    }
+    if (lowerName.contains('tuna')) {
+      return [65.0, 130.0]; // Half or full drained 185g can
+    }
+    if (lowerName.contains('prawn') || lowerName.contains('jheenga')) {
+      return [100.0, 150.0, 200.0];
+    }
+    if (lowerName.contains('mackerel') ||
+        lowerName.contains('bangda') ||
+        lowerName.contains('sardine') ||
+        lowerName.contains('tarli') ||
+        lowerName.contains('rohu') ||
+        lowerName.contains('katla') ||
+        lowerName.contains('surmai') ||
+        lowerName.contains('pomfret')) {
+      return [100.0, 150.0, 200.0];
     }
     if (lowerName.contains('chicken breast')) {
       return [100.0, 150.0, 200.0, 250.0];
+    }
+    if (lowerName.contains('chicken liver')) {
+      return [75.0, 100.0, 150.0];
     }
     if (lowerName.contains('chicken') || lowerName.contains('fish')) {
       return [100.0, 150.0, 200.0];
@@ -113,7 +141,9 @@ class RecommendationService {
     // Build balanced candidate pool:
     // Take top efficiency foods across eligible staples, ensuring diverse sources
     final sortedFoods = List<FoodItem>.from(eligibleFoods)
-      ..sort((a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0));
+      ..sort(
+        (a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0),
+      );
 
     // Diverse representation: include high protein, high efficiency, and preferred foods
     final Set<String> addedKeys = {};
@@ -132,13 +162,18 @@ class RecommendationService {
       }
     }
 
-    // For Non-Veg preference: prioritize animal protein heroes (chicken breast, fish)
-    if (criteria.dietaryPreference == AppConstants.dietNonVeg) {
-      final nonVegItems = eligibleFoods
-          .where((f) => f.dietaryClassification == AppConstants.dietNonVeg)
-          .toList()
-        ..sort((a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0));
-      for (final f in nonVegItems.take(5)) {
+    // For Non-Veg or All preference: ensure animal protein heroes (chicken, fish, eggs) are in candidate pool
+    if (criteria.dietaryPreference == AppConstants.dietNonVeg ||
+        criteria.dietaryPreference == AppConstants.dietAll) {
+      final nonVegItems =
+          eligibleFoods
+              .where((f) => f.dietaryClassification == AppConstants.dietNonVeg)
+              .toList()
+            ..sort(
+              (a, b) =>
+                  (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0),
+            );
+      for (final f in nonVegItems.take(6)) {
         final key = f.id != null ? 'id_${f.id}' : f.name;
         if (!addedKeys.contains(key)) {
           candidatePool.add(f);
@@ -147,12 +182,18 @@ class RecommendationService {
       }
     }
 
-    // For Eggetarian preference: prioritize egg heroes
-    if (criteria.dietaryPreference == AppConstants.dietEgg || criteria.dietaryPreference == AppConstants.dietNonVeg) {
-      final eggItems = eligibleFoods
-          .where((f) => f.dietaryClassification == AppConstants.dietEgg)
-          .toList()
-        ..sort((a, b) => (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0));
+    // For Eggetarian, Non-Veg, or All preference: ensure egg heroes are in candidate pool
+    if (criteria.dietaryPreference == AppConstants.dietEgg ||
+        criteria.dietaryPreference == AppConstants.dietNonVeg ||
+        criteria.dietaryPreference == AppConstants.dietAll) {
+      final eggItems =
+          eligibleFoods
+              .where((f) => f.dietaryClassification == AppConstants.dietEgg)
+              .toList()
+            ..sort(
+              (a, b) =>
+                  (b.proteinPerRupee ?? 0).compareTo(a.proteinPerRupee ?? 0),
+            );
       for (final f in eggItems.take(4)) {
         final key = f.id != null ? 'id_${f.id}' : f.name;
         if (!addedKeys.contains(key)) {
@@ -168,7 +209,7 @@ class RecommendationService {
       if (!addedKeys.contains(key)) {
         candidatePool.add(f);
         addedKeys.add(key);
-        if (candidatePool.length >= 24) break;
+        if (candidatePool.length >= 26) break;
       }
     }
 
@@ -196,8 +237,9 @@ class RecommendationService {
         return;
       }
 
-      // 4. Hero Protein Alignment: If user requested Non-Veg or Eggetarian criteria,
-      // require the combinations to feature their diet heroes when available
+      // 4. Hero Protein Alignment: If user specifically requested Non-Veg or Eggetarian criteria,
+      // require the combinations to feature their diet heroes when available.
+      // (For 'All' preference, no specific category is forced; all eligible foods compete fairly).
       if (criteria.dietaryPreference == AppConstants.dietNonVeg) {
         final hasNonVeg = items.any(
           (i) => i.food.dietaryClassification == AppConstants.dietNonVeg,
@@ -217,7 +259,10 @@ class RecommendationService {
 
       if (coverage >= 0.80) {
         // Meets at least 80% of protein target: Feasible combination
-        final overshoot = max(0.0, totalProtein - criteria.remainingProteinTarget);
+        final overshoot = max(
+          0.0,
+          totalProtein - criteria.remainingProteinTarget,
+        );
         final reason = _generateFeasibleExplanation(
           totalProtein: totalProtein,
           totalCost: totalCost,
@@ -225,8 +270,12 @@ class RecommendationService {
           itemsCount: items.length,
           overshoot: overshoot,
           diet: criteria.dietaryPreference,
-          hasMeat: items.any((i) => i.food.dietaryClassification == AppConstants.dietNonVeg),
-          hasEggs: items.any((i) => i.food.dietaryClassification == AppConstants.dietEgg),
+          hasMeat: items.any(
+            (i) => i.food.dietaryClassification == AppConstants.dietNonVeg,
+          ),
+          hasEggs: items.any(
+            (i) => i.food.dietaryClassification == AppConstants.dietEgg,
+          ),
         );
 
         feasiblePlans.add(
@@ -386,7 +435,11 @@ class RecommendationService {
     // Preference for matching exact requested combo size
     final sizeBonus = (plan.items.length == criteria.maxItems) ? 15.0 : 0.0;
 
-    return 100.0 + efficiencyBonus + savingsBonus + sizeBonus - targetMatchPenalty;
+    return 100.0 +
+        efficiencyBonus +
+        savingsBonus +
+        sizeBonus -
+        targetMatchPenalty;
   }
 
   static String _generateFeasibleExplanation({
@@ -425,7 +478,11 @@ class RecommendationService {
 
     for (final plan in plans) {
       final sortedItems = List<RecommendationItem>.from(plan.items)
-        ..sort((a, b) => (a.food.id?.toString() ?? a.food.name).compareTo(b.food.id?.toString() ?? b.food.name));
+        ..sort(
+          (a, b) => (a.food.id?.toString() ?? a.food.name).compareTo(
+            b.food.id?.toString() ?? b.food.name,
+          ),
+        );
 
       final signature = sortedItems
           .map((i) => '${i.food.id ?? i.food.name}:${i.quantity.toInt()}')

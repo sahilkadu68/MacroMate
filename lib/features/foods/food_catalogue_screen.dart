@@ -54,7 +54,8 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                 ListTile(
                   leading: const Icon(Icons.bolt, color: AppColors.secondary),
                   title: const Text('Highest Protein per Rupee (Best Value)'),
-                  trailing: provider.sortOption == FoodSortOption.proteinPerRupee
+                  trailing:
+                      provider.sortOption == FoodSortOption.proteinPerRupee
                       ? const Icon(Icons.check, color: AppColors.primary)
                       : null,
                   onTap: () {
@@ -63,7 +64,10 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.fitness_center, color: AppColors.protein),
+                  leading: const Icon(
+                    Icons.fitness_center,
+                    color: AppColors.protein,
+                  ),
                   title: const Text('Highest Protein Content'),
                   trailing: provider.sortOption == FoodSortOption.protein
                       ? const Icon(Icons.check, color: AppColors.primary)
@@ -74,7 +78,10 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.currency_rupee, color: AppColors.secondary),
+                  leading: const Icon(
+                    Icons.currency_rupee,
+                    color: AppColors.secondary,
+                  ),
                   title: const Text('Lowest Cost per 100g'),
                   trailing: provider.sortOption == FoodSortOption.costAsc
                       ? const Icon(Icons.check, color: AppColors.primary)
@@ -85,7 +92,10 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.local_fire_department, color: AppColors.calories),
+                  leading: const Icon(
+                    Icons.local_fire_department,
+                    color: AppColors.calories,
+                  ),
                   title: const Text('Lowest Calories'),
                   trailing: provider.sortOption == FoodSortOption.caloriesAsc
                       ? const Icon(Icons.check, color: AppColors.primary)
@@ -188,19 +198,30 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                   children: [
                     const Text(
                       'My Recipes',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         minimumSize: const Size(0, 36),
                       ),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('New Recipe', style: TextStyle(fontSize: 12)),
+                      label: const Text(
+                        'New Recipe',
+                        style: TextStyle(fontSize: 12),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const RecipeBuilderScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const RecipeBuilderScreen(),
+                          ),
                         );
                       },
                     ),
@@ -226,19 +247,27 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                       itemBuilder: (c, idx) {
                         final r = recipes[idx];
                         return ListTile(
-                          title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          title: Text(
+                            r.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
                           subtitle: Text(
                             '${r.servings} serves · ${r.perServingProtein.toStringAsFixed(1)}g P/serve · ${r.perServingCalories.round()} kcal · ${Formatters.currency(r.perServingCost)}',
                             style: const TextStyle(fontSize: 11),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 14,
+                          ),
                           onTap: () {
                             Navigator.pop(ctx);
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
                               shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20),
+                                ),
                               ),
                               builder: (_) => RecipeDetailSheet(recipe: r),
                             );
@@ -322,7 +351,9 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                 // Favourites Filter Chip
                 FilterChip(
                   avatar: Icon(
-                    foodProvider.showFavoritesOnly ? Icons.favorite : Icons.favorite_border,
+                    foodProvider.showFavoritesOnly
+                        ? Icons.favorite
+                        : Icons.favorite_border,
                     size: 14,
                     color: Colors.red,
                   ),
@@ -334,7 +365,8 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
 
                 // Catalogue Filter Options
                 ...DietaryService.catalogueFilterOptions.map((opt) {
-                  final isSelected = foodProvider.selectedCatalogueFilter == opt;
+                  final isSelected =
+                      foodProvider.selectedCatalogueFilter == opt;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
@@ -344,7 +376,9 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                         if (val) {
                           foodProvider.setCatalogueFilter(opt);
                         } else {
-                          foodProvider.setCatalogueFilter(DietaryService.filterAll);
+                          foodProvider.setCatalogueFilter(
+                            DietaryService.filterAll,
+                          );
                         }
                       },
                     ),

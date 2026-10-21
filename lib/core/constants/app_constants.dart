@@ -2,11 +2,24 @@ class AppConstants {
   static const String appName = 'MacroMate India';
   static const String appTagline = 'Nutrition on a Student Budget';
 
-  // Dietary preferences
+  // Dietary preferences (User preferences & filters include All)
+  static const String dietAll = 'All';
   static const String dietVeg = 'Vegetarian';
   static const String dietEgg = 'Eggetarian';
   static const String dietNonVeg = 'Non-Vegetarian';
-  static const List<String> dietaryPreferences = [dietVeg, dietEgg, dietNonVeg];
+  static const List<String> dietaryPreferences = [
+    dietAll,
+    dietVeg,
+    dietEgg,
+    dietNonVeg,
+  ];
+
+  // Dietary classifications (For individual food item categorization)
+  static const List<String> dietaryClassifications = [
+    dietVeg,
+    dietEgg,
+    dietNonVeg,
+  ];
 
   // Meal types
   static const String mealBreakfast = 'Breakfast';

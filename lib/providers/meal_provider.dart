@@ -14,7 +14,7 @@ class MealProvider with ChangeNotifier {
   String? _errorMessage;
 
   MealProvider({MealRepository? repository})
-      : _repository = repository ?? MealRepository() {
+    : _repository = repository ?? MealRepository() {
     loadMealsForSelectedDate();
     _loadRecentHistory();
   }
@@ -44,8 +44,10 @@ class MealProvider with ChangeNotifier {
     try {
       final now = DateTime.now();
       final twoWeeksAgo = now.subtract(const Duration(days: 14));
-      _recentHistoryEntries =
-          await _repository.getMealsBetweenDates(twoWeeksAgo, now);
+      _recentHistoryEntries = await _repository.getMealsBetweenDates(
+        twoWeeksAgo,
+        now,
+      );
       notifyListeners();
     } catch (_) {}
   }
@@ -133,8 +135,9 @@ class MealProvider with ChangeNotifier {
   Future<int> repeatYesterdayMeal(String mealType) async {
     final yesterday = _selectedDate.subtract(const Duration(days: 1));
     final yesterdayEntries = await _repository.getMealsForDate(yesterday);
-    final targetEntries =
-        yesterdayEntries.where((e) => e.mealType == mealType).toList();
+    final targetEntries = yesterdayEntries
+        .where((e) => e.mealType == mealType)
+        .toList();
 
     if (targetEntries.isEmpty) return 0;
 

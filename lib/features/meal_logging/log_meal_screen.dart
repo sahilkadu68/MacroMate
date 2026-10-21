@@ -44,6 +44,7 @@ class _LogMealScreenState extends State<LogMealScreen> {
   final List<StagedMealItem> _stagedItems = [];
   final TextEditingController _searchController = TextEditingController();
   int _activeSourceTab = 0; // 0: All Foods, 1: Recent, 2: Favourites
+  String _selectedDietaryFilter = DietaryService.filterAll;
   bool _isSaving = false;
 
   @override
@@ -388,6 +389,12 @@ class _LogMealScreenState extends State<LogMealScreen> {
           .toList();
     }
 
+    // Apply dietary filter (All, Veg, Egg, Non-Veg)
+    sourceFoods = DietaryService.applyCatalogueFilter(
+      foods: sourceFoods,
+      selectedFilter: _selectedDietaryFilter,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -562,7 +569,7 @@ class _LogMealScreenState extends State<LogMealScreen> {
             ),
           ),
 
-          // Category Chips for fast tapping
+          // Category and Dietary Chips for fast tapping
           SizedBox(
             height: 38,
             child: ListView(
@@ -574,6 +581,17 @@ class _LogMealScreenState extends State<LogMealScreen> {
                 _buildSourceFilterChip('Recently Logged', 1),
                 const SizedBox(width: 6),
                 _buildSourceFilterChip('Favourites', 2),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: VerticalDivider(width: 12, indent: 8, endIndent: 8),
+                ),
+                _buildDietaryFilterChip(DietaryService.filterAll),
+                const SizedBox(width: 6),
+                _buildDietaryFilterChip(DietaryService.filterVeg),
+                const SizedBox(width: 6),
+                _buildDietaryFilterChip(DietaryService.filterEgg),
+                const SizedBox(width: 6),
+                _buildDietaryFilterChip(DietaryService.filterNonVeg),
               ],
             ),
           ),
@@ -743,6 +761,18 @@ class _LogMealScreenState extends State<LogMealScreen> {
       selectedColor: AppColors.primaryContainer,
       onSelected: (val) {
         if (val) setState(() => _activeSourceTab = tabIdx);
+      },
+    );
+  }
+
+  Widget _buildDietaryFilterChip(String label) {
+    final isSelected = _selectedDietaryFilter == label;
+    return ChoiceChip(
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      selected: isSelected,
+      selectedColor: AppColors.primaryContainer,
+      onSelected: (val) {
+        if (val) setState(() => _selectedDietaryFilter = label);
       },
     );
   }

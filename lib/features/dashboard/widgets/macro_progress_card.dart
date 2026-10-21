@@ -17,7 +17,9 @@ class MacroProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final calTarget = profile.calorieTarget > 0 ? profile.calorieTarget : 2000.0;
+    final calTarget = profile.calorieTarget > 0
+        ? profile.calorieTarget
+        : 2000.0;
     final calConsumed = summary.totalCalories;
     final calRemaining = max(0.0, calTarget - calConsumed);
     final calRatio = (calConsumed / calTarget).clamp(0.0, 1.0);
@@ -88,10 +90,7 @@ class MacroProgressCard extends StatelessWidget {
                           ),
                           const Text(
                             'kcal left',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -157,7 +156,10 @@ class MacroProgressCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

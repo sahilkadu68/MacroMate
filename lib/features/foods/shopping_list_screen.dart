@@ -18,14 +18,19 @@ class ShoppingListScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Add Grocery Item', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              title: const Text(
+                'Add Grocery Item',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameController,
                     autofocus: true,
-                    decoration: const InputDecoration(labelText: 'Item Name (e.g. Soya Chunks, Eggs)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Item Name (e.g. Soya Chunks, Eggs)',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -33,8 +38,12 @@ class ShoppingListScreen extends StatelessWidget {
                       Expanded(
                         child: TextField(
                           controller: qtyController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(labelText: 'Quantity'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Quantity',
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -45,7 +54,10 @@ class ShoppingListScreen extends StatelessWidget {
                           DropdownMenuItem(value: 'kg', child: Text('kg')),
                           DropdownMenuItem(value: 'ml', child: Text('ml')),
                           DropdownMenuItem(value: 'L', child: Text('L')),
-                          DropdownMenuItem(value: 'piece', child: Text('piece')),
+                          DropdownMenuItem(
+                            value: 'piece',
+                            child: Text('piece'),
+                          ),
                           DropdownMenuItem(value: 'pack', child: Text('pack')),
                         ],
                         onChanged: (val) {
@@ -64,9 +76,13 @@ class ShoppingListScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     final name = nameController.text.trim();
-                    final qty = double.tryParse(qtyController.text.trim()) ?? 1.0;
+                    final qty =
+                        double.tryParse(qtyController.text.trim()) ?? 1.0;
                     if (name.isNotEmpty) {
-                      Provider.of<PlanProvider>(context, listen: false).addShoppingItem(name, qty, unit);
+                      Provider.of<PlanProvider>(
+                        context,
+                        listen: false,
+                      ).addShoppingItem(name, qty, unit);
                       Navigator.pop(ctx);
                     }
                   },
@@ -93,7 +109,10 @@ class ShoppingListScreen extends StatelessWidget {
           if (purchasedCount > 0)
             TextButton.icon(
               icon: const Icon(Icons.cleaning_services, size: 16),
-              label: const Text('Clear Checked', style: TextStyle(fontSize: 12)),
+              label: const Text(
+                'Clear Checked',
+                style: TextStyle(fontSize: 12),
+              ),
               onPressed: () => planProvider.clearPurchasedItems(),
             ),
         ],
@@ -102,7 +121,8 @@ class ShoppingListScreen extends StatelessWidget {
           ? EmptyStateView(
               icon: Icons.shopping_basket_outlined,
               title: 'Shopping List Empty',
-              message: 'Add items manually or tap "Add to List" from any Recipe to plan your hostel grocery shopping.',
+              message:
+                  'Add items manually or tap "Add to List" from any Recipe to plan your hostel grocery shopping.',
               actionLabel: 'Add First Item',
               onAction: () => _showAddItemDialog(context),
             )
@@ -121,7 +141,9 @@ class ShoppingListScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      decoration: item.isPurchased ? TextDecoration.lineThrough : null,
+                      decoration: item.isPurchased
+                          ? TextDecoration.lineThrough
+                          : null,
                       color: item.isPurchased ? Colors.grey : null,
                     ),
                   ),
@@ -133,9 +155,15 @@ class ShoppingListScreen extends StatelessWidget {
                     ),
                   ),
                   secondary: IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
                     onPressed: () {
-                      if (item.id != null) planProvider.deleteShoppingItem(item.id!);
+                      if (item.id != null) {
+                        planProvider.deleteShoppingItem(item.id!);
+                      }
                     },
                   ),
                   onChanged: (_) => planProvider.toggleShoppingItem(item),

@@ -14,7 +14,7 @@ import 'database_factory_helper.dart';
 
 class DatabaseHelper {
   static const String dbName = 'macromate_india.db';
-  static const int dbVersion = 2;
+  static const int dbVersion = 3;
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -36,9 +36,10 @@ class DatabaseHelper {
 
   bool get isFallbackMode => _isFallbackMode;
 
-  void _initMemoryFallback() {
+  void _initMemoryFallback({bool forceReload = false}) {
     _memProfile ??= UserProfile.defaultProfile();
-    if (_memFoods.isEmpty) {
+    if (_memFoods.isEmpty || forceReload) {
+      _memFoods.clear();
       int id = 1;
       for (final f in IndianFoodsSeed.initialFoods) {
         _memFoods.add(f.copyWith(id: id++));
@@ -110,6 +111,7 @@ class DatabaseHelper {
       CREATE TABLE foods (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
+        brand TEXT,
         category TEXT NOT NULL,
         dietary_classification TEXT NOT NULL,
         calories_per_100 REAL NOT NULL,
@@ -120,6 +122,13 @@ class DatabaseHelper {
         preparation_basis TEXT NOT NULL,
         estimated_unit_price REAL NOT NULL,
         price_quantity_basis REAL NOT NULL,
+        purchase_unit TEXT NOT NULL DEFAULT 'kg',
+        package_quantity REAL NOT NULL DEFAULT 1000.0,
+        package_price REAL NOT NULL DEFAULT 0.0,
+        serving_size REAL NOT NULL DEFAULT 100.0,
+        price_source TEXT DEFAULT 'Retail estimate',
+        last_price_update TEXT,
+        is_price_estimate INTEGER NOT NULL DEFAULT 1,
         source_note TEXT,
         is_custom INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
@@ -319,6 +328,32 @@ class DatabaseHelper {
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_recipe_ing_recipe ON recipe_ingredients(recipe_id)',
       );
+    }
+
+    if (oldVersion < 3) {
+      final columns = [
+        "ALTER TABLE foods ADD COLUMN brand TEXT",
+        "ALTER TABLE foods ADD COLUMN purchase_unit TEXT DEFAULT 'kg'",
+        "ALTER TABLE foods ADD COLUMN package_quantity REAL DEFAULT 1000.0",
+        "ALTER TABLE foods ADD COLUMN package_price REAL DEFAULT 0.0",
+        "ALTER TABLE foods ADD COLUMN serving_size REAL DEFAULT 100.0",
+        "ALTER TABLE foods ADD COLUMN price_source TEXT DEFAULT 'Retail estimate'",
+        "ALTER TABLE foods ADD COLUMN last_price_update TEXT",
+        "ALTER TABLE foods ADD COLUMN is_price_estimate INTEGER DEFAULT 1",
+      ];
+      for (final sql in columns) {
+        try {
+          await db.execute(sql);
+        } catch (_) {}
+      }
+
+      // Re-seed updated food items while preserving user's custom foods
+      await db.delete('foods', where: 'is_custom = 0');
+      final batch = db.batch();
+      for (final food in IndianFoodsSeed.initialFoods) {
+        batch.insert('foods', food.toMap());
+      }
+      await batch.commit(noResult: true);
     }
   }
 
@@ -895,19 +930,17 @@ class DatabaseHelper {
   Future<double> getTotalWaterForDate(String date) async {
     if (_isFallbackMode) {
       _initMemoryFallback();
-      return _memWaterLogs.where((w) => w.entryDate == date).fold<double>(
-        0.0,
-        (double sum, w) => sum + w.quantityMl,
-      );
+      return _memWaterLogs
+          .where((w) => w.entryDate == date)
+          .fold<double>(0.0, (double sum, w) => sum + w.quantityMl);
     }
     try {
       final db = await database;
       if (db == null) {
         _initMemoryFallback();
-        return _memWaterLogs.where((w) => w.entryDate == date).fold<double>(
-          0.0,
-          (double sum, w) => sum + w.quantityMl,
-        );
+        return _memWaterLogs
+            .where((w) => w.entryDate == date)
+            .fold<double>(0.0, (double sum, w) => sum + w.quantityMl);
       }
       final result = await db.rawQuery(
         'SELECT SUM(quantity_ml) as total FROM water_logs WHERE entry_date = ?',
@@ -921,10 +954,9 @@ class DatabaseHelper {
       if (kIsWeb) {
         _isFallbackMode = true;
         _initMemoryFallback();
-        return _memWaterLogs.where((w) => w.entryDate == date).fold<double>(
-          0.0,
-          (double sum, w) => sum + w.quantityMl,
-        );
+        return _memWaterLogs
+            .where((w) => w.entryDate == date)
+            .fold<double>(0.0, (double sum, w) => sum + w.quantityMl);
       }
       rethrow;
     }
@@ -1141,11 +1173,7 @@ class DatabaseHelper {
         _memActivityLogs.removeWhere((a) => a.id == id);
         return 1;
       }
-      return await db.delete(
-        'activity_logs',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+      return await db.delete('activity_logs', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
       if (kIsWeb) {
         _isFallbackMode = true;
@@ -1178,7 +1206,9 @@ class DatabaseHelper {
           where: 'recipe_id = ?',
           whereArgs: [rId],
         );
-        final ingredients = ingMaps.map((m) => RecipeIngredient.fromMap(m)).toList();
+        final ingredients = ingMaps
+            .map((m) => RecipeIngredient.fromMap(m))
+            .toList();
         recipes.add(Recipe.fromMap(rMap, ingredients: ingredients));
       }
       return recipes;
@@ -1369,7 +1399,11 @@ class DatabaseHelper {
         _memShoppingItems.removeWhere((i) => i.id == id);
         return 1;
       }
-      return await db.delete('shopping_items', where: 'id = ?', whereArgs: [id]);
+      return await db.delete(
+        'shopping_items',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
     } catch (e) {
       if (kIsWeb) {
         _isFallbackMode = true;
@@ -1459,7 +1493,11 @@ class DatabaseHelper {
         whereArgs: [foodId],
       );
       if (existing.isNotEmpty) {
-        await db.delete('favorite_foods', where: 'food_id = ?', whereArgs: [foodId]);
+        await db.delete(
+          'favorite_foods',
+          where: 'food_id = ?',
+          whereArgs: [foodId],
+        );
         return false;
       } else {
         await db.insert('favorite_foods', {

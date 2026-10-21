@@ -60,7 +60,13 @@ class _AddEditFoodScreenState extends State<AddEditFoodScreen> {
     _sourceController = TextEditingController(text: f?.sourceNote ?? '');
 
     _selectedCategory = f?.category ?? AppConstants.catPlantProtein;
-    _selectedDiet = f?.dietaryClassification ?? AppConstants.dietVeg;
+    _selectedDiet =
+        (f != null &&
+            AppConstants.dietaryClassifications.contains(
+              f.dietaryClassification,
+            ))
+        ? f.dietaryClassification
+        : AppConstants.dietVeg;
     _selectedUnit = f?.measurementUnit ?? AppConstants.unitGrams;
     _selectedPrep = f?.preparationBasis ?? AppConstants.prepCooked;
 
@@ -117,6 +123,12 @@ class _AddEditFoodScreenState extends State<AddEditFoodScreen> {
       preparationBasis: _selectedPrep,
       estimatedUnitPrice: double.parse(_priceController.text.trim()),
       priceQuantityBasis: double.parse(_basisController.text.trim()),
+      packagePrice: double.parse(_priceController.text.trim()),
+      packageQuantity: double.parse(_basisController.text.trim()),
+      purchaseUnit: _selectedUnit,
+      priceSource: _sourceController.text.trim().isNotEmpty
+          ? _sourceController.text.trim()
+          : 'User custom entry',
       sourceNote: _sourceController.text.trim().isNotEmpty
           ? _sourceController.text.trim()
           : 'User added custom food',
@@ -197,7 +209,7 @@ class _AddEditFoodScreenState extends State<AddEditFoodScreen> {
                     child: DropdownButtonFormField<String>(
                       initialValue: _selectedDiet,
                       decoration: const InputDecoration(labelText: 'Diet Type'),
-                      items: AppConstants.dietaryPreferences.map((d) {
+                      items: AppConstants.dietaryClassifications.map((d) {
                         return DropdownMenuItem(
                           value: d,
                           child: Text(d, style: const TextStyle(fontSize: 13)),

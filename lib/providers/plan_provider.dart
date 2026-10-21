@@ -12,7 +12,7 @@ class PlanProvider with ChangeNotifier {
   String? _errorMessage;
 
   PlanProvider({PlanRepository? repository})
-      : _repository = repository ?? PlanRepository() {
+    : _repository = repository ?? PlanRepository() {
     loadAll();
   }
 
@@ -63,7 +63,11 @@ class PlanProvider with ChangeNotifier {
   }
 
   // Shopping Items
-  Future<void> addShoppingItem(String name, double quantity, String unit) async {
+  Future<void> addShoppingItem(
+    String name,
+    double quantity,
+    String unit,
+  ) async {
     try {
       final item = ShoppingItem(name: name, quantity: quantity, unit: unit);
       final id = await _repository.addShoppingItem(item);
@@ -117,11 +121,15 @@ class PlanProvider with ChangeNotifier {
     for (final ing in recipe.ingredients) {
       // Check if item already exists: aggregate quantity
       final existingIdx = _shoppingItems.indexWhere(
-        (i) => i.name.toLowerCase() == ing.foodName.toLowerCase() && !i.isPurchased,
+        (i) =>
+            i.name.toLowerCase() == ing.foodName.toLowerCase() &&
+            !i.isPurchased,
       );
       if (existingIdx != -1) {
         final existing = _shoppingItems[existingIdx];
-        final updated = existing.copyWith(quantity: existing.quantity + ing.quantity);
+        final updated = existing.copyWith(
+          quantity: existing.quantity + ing.quantity,
+        );
         await _repository.updateShoppingItem(updated);
         _shoppingItems[existingIdx] = updated;
       } else {

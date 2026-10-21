@@ -57,7 +57,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         text: p.waterTarget.toInt().toString(),
       );
 
-      _dietPreference = p.dietaryPreference;
+      _dietPreference =
+          AppConstants.dietaryPreferences.contains(p.dietaryPreference)
+          ? p.dietaryPreference
+          : AppConstants.dietAll;
       _activityLevel = p.activityLevel;
       _nutritionGoal = p.nutritionGoal;
 

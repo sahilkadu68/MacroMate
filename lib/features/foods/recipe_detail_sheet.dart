@@ -60,11 +60,17 @@ class RecipeDetailSheet extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Text('Log Serving to Which Meal?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text(
+                    'Log Serving to Which Meal?',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
                 ...AppConstants.mealTypes.map((type) {
                   return ListTile(
-                    leading: const Icon(Icons.restaurant, color: AppColors.primary),
+                    leading: const Icon(
+                      Icons.restaurant,
+                      color: AppColors.primary,
+                    ),
                     title: Text(type),
                     onTap: () {
                       Navigator.pop(ctx);
@@ -113,7 +119,10 @@ class RecipeDetailSheet extends StatelessWidget {
                 Expanded(
                   child: Text(
                     recipe.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -123,7 +132,8 @@ class RecipeDetailSheet extends StatelessWidget {
                     final confirmed = await ConfirmDialog.show(
                       context: context,
                       title: 'Delete Recipe',
-                      message: 'Are you sure you want to delete "${recipe.name}"?',
+                      message:
+                          'Are you sure you want to delete "${recipe.name}"?',
                     );
                     if (confirmed && recipe.id != null) {
                       await planProvider.deleteRecipe(recipe.id!);
@@ -135,7 +145,13 @@ class RecipeDetailSheet extends StatelessWidget {
             ),
             if (recipe.description.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(recipe.description, style: TextStyle(color: theme.colorScheme.onSurface.withAlpha(150), fontSize: 12)),
+              Text(
+                recipe.description,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withAlpha(150),
+                  fontSize: 12,
+                ),
+              ),
             ],
             const SizedBox(height: 14),
 
@@ -149,16 +165,35 @@ class RecipeDetailSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildStat('Protein / serve', '${recipe.perServingProtein.toStringAsFixed(1)}g', AppColors.protein),
-                  _buildStat('Calories', '${recipe.perServingCalories.round()} kcal', AppColors.calories),
-                  _buildStat('Cost / serve', Formatters.currency(recipe.perServingCost), AppColors.secondary),
-                  _buildStat('Servings', '${recipe.servings}', AppColors.primary),
+                  _buildStat(
+                    'Protein / serve',
+                    '${recipe.perServingProtein.toStringAsFixed(1)}g',
+                    AppColors.protein,
+                  ),
+                  _buildStat(
+                    'Calories',
+                    '${recipe.perServingCalories.round()} kcal',
+                    AppColors.calories,
+                  ),
+                  _buildStat(
+                    'Cost / serve',
+                    Formatters.currency(recipe.perServingCost),
+                    AppColors.secondary,
+                  ),
+                  _buildStat(
+                    'Servings',
+                    '${recipe.servings}',
+                    AppColors.primary,
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
-            Text('Ingredients (${recipe.ingredients.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(
+              'Ingredients (${recipe.ingredients.length})',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
             const SizedBox(height: 6),
             ...recipe.ingredients.map((ing) {
               return Padding(
@@ -166,10 +201,17 @@ class RecipeDetailSheet extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${ing.foodName} (${ing.quantity.toInt()}${ing.measurementUnit})', style: const TextStyle(fontSize: 13)),
+                    Text(
+                      '${ing.foodName} (${ing.quantity.toInt()}${ing.measurementUnit})',
+                      style: const TextStyle(fontSize: 13),
+                    ),
                     Text(
                       '${ing.protein.toStringAsFixed(1)}g P · ${Formatters.currency(ing.cost)}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -197,7 +239,9 @@ class RecipeDetailSheet extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: AppColors.primary,
-                          content: Text('Added ingredients of "${recipe.name}" to Shopping List!'),
+                          content: Text(
+                            'Added ingredients of "${recipe.name}" to Shopping List!',
+                          ),
                         ),
                       );
                     }
@@ -216,7 +260,14 @@ class RecipeDetailSheet extends StatelessWidget {
       children: [
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: color,
+          ),
+        ),
       ],
     );
   }

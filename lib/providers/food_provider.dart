@@ -30,11 +30,9 @@ class FoodProvider with ChangeNotifier {
   bool _showFavoritesOnly = false;
   FoodSortOption _sortOption = FoodSortOption.proteinPerRupee;
 
-  FoodProvider({
-    FoodRepository? repository,
-    PlanRepository? planRepository,
-  })  : _repository = repository ?? FoodRepository(),
-        _planRepository = planRepository ?? PlanRepository() {
+  FoodProvider({FoodRepository? repository, PlanRepository? planRepository})
+    : _repository = repository ?? FoodRepository(),
+      _planRepository = planRepository ?? PlanRepository() {
     loadFoods();
   }
 
@@ -48,13 +46,16 @@ class FoodProvider with ChangeNotifier {
   String? get selectedCategory => _selectedCategory;
   String get selectedCatalogueFilter => _selectedCatalogueFilter;
   String? get selectedDietaryPreference =>
-      _selectedCatalogueFilter == DietaryService.filterVegOnly
-          ? AppConstants.dietVeg
-          : _selectedCatalogueFilter == DietaryService.filterEggsOnly
-              ? AppConstants.dietEgg
-              : _selectedCatalogueFilter == DietaryService.filterMeatFish
-                  ? AppConstants.dietNonVeg
-                  : null;
+      _selectedCatalogueFilter == DietaryService.filterVeg ||
+          _selectedCatalogueFilter == 'Veg Only'
+      ? AppConstants.dietVeg
+      : _selectedCatalogueFilter == DietaryService.filterEgg ||
+            _selectedCatalogueFilter == 'Eggs Only'
+      ? AppConstants.dietEgg
+      : _selectedCatalogueFilter == DietaryService.filterNonVeg ||
+            _selectedCatalogueFilter == 'Meat & Fish'
+      ? AppConstants.dietNonVeg
+      : null;
   bool get showFavoritesOnly => _showFavoritesOnly;
   FoodSortOption get sortOption => _sortOption;
 
@@ -97,12 +98,15 @@ class FoodProvider with ChangeNotifier {
   }
 
   void setDietaryFilter(String? dietaryPreference) {
-    if (dietaryPreference == AppConstants.dietVeg) {
-      _selectedCatalogueFilter = DietaryService.filterVegOnly;
-    } else if (dietaryPreference == AppConstants.dietEgg) {
-      _selectedCatalogueFilter = DietaryService.filterEggsOnly;
-    } else if (dietaryPreference == AppConstants.dietNonVeg) {
-      _selectedCatalogueFilter = DietaryService.filterMeatFish;
+    if (dietaryPreference == AppConstants.dietVeg ||
+        dietaryPreference == 'Veg') {
+      _selectedCatalogueFilter = DietaryService.filterVeg;
+    } else if (dietaryPreference == AppConstants.dietEgg ||
+        dietaryPreference == 'Egg') {
+      _selectedCatalogueFilter = DietaryService.filterEgg;
+    } else if (dietaryPreference == AppConstants.dietNonVeg ||
+        dietaryPreference == 'Non-Veg') {
+      _selectedCatalogueFilter = DietaryService.filterNonVeg;
     } else {
       _selectedCatalogueFilter = DietaryService.filterAll;
     }
@@ -174,7 +178,9 @@ class FoodProvider with ChangeNotifier {
 
     // Favorites only filter
     if (_showFavoritesOnly) {
-      results = results.where((f) => f.id != null && _favoriteFoodIds.contains(f.id!)).toList();
+      results = results
+          .where((f) => f.id != null && _favoriteFoodIds.contains(f.id!))
+          .toList();
     }
 
     // Sorting

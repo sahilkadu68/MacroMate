@@ -17,13 +17,18 @@ class DietaryService {
     required String userPreference,
   }) {
     switch (userPreference) {
+      case AppConstants.dietAll:
+        return true; // All foods eligible (veg, egg, non-veg)
       case AppConstants.dietVeg:
+      case 'Veg':
         return foodClassification == AppConstants.dietVeg;
       case AppConstants.dietEgg:
+      case 'Egg':
         return foodClassification == AppConstants.dietVeg ||
             foodClassification == AppConstants.dietEgg;
       case AppConstants.dietNonVeg:
-        return true; // All foods are permitted
+      case 'Non-Veg':
+        return true; // All foods permitted for non-vegetarians
       default:
         return true;
     }
@@ -46,17 +51,22 @@ class DietaryService {
 
   /// Categorical catalogue filters for explicit browsing
   static const String filterAll = 'All';
-  static const String filterVegOnly = 'Veg Only';
-  static const String filterEggsOnly = 'Eggs Only';
-  static const String filterMeatFish = 'Meat & Fish';
-  static const String filterHighProtein = 'High Protein (>15g)';
-  static const String filterBudgetSaver = 'Budget Saver (>1.2 g/₹)';
+  static const String filterVeg = 'Veg';
+  static const String filterEgg = 'Egg';
+  static const String filterNonVeg = 'Non-Veg';
+  static const String filterHighProtein = 'High Protein';
+  static const String filterBudgetSaver = 'Budget Saver';
+
+  // Legacy aliases for backward compatibility
+  static const String filterVegOnly = 'Veg';
+  static const String filterEggsOnly = 'Egg';
+  static const String filterMeatFish = 'Non-Veg';
 
   static const List<String> catalogueFilterOptions = [
     filterAll,
-    filterVegOnly,
-    filterEggsOnly,
-    filterMeatFish,
+    filterVeg,
+    filterEgg,
+    filterNonVeg,
     filterHighProtein,
     filterBudgetSaver,
   ];
@@ -67,24 +77,29 @@ class DietaryService {
     required String selectedFilter,
   }) {
     switch (selectedFilter) {
-      case filterVegOnly:
+      case filterVeg:
+      case 'Veg Only':
         return foods
             .where((f) => f.dietaryClassification == AppConstants.dietVeg)
             .toList();
-      case filterEggsOnly:
+      case filterEgg:
+      case 'Eggs Only':
+      case 'Eggetarian':
         return foods
             .where((f) => f.dietaryClassification == AppConstants.dietEgg)
             .toList();
-      case filterMeatFish:
+      case filterNonVeg:
+      case 'Meat & Fish':
+      case 'Non-Vegetarian':
         return foods
             .where((f) => f.dietaryClassification == AppConstants.dietNonVeg)
             .toList();
       case filterHighProtein:
+      case 'High Protein (>15g)':
         return foods.where((f) => f.proteinPer100 >= 15.0).toList();
       case filterBudgetSaver:
-        return foods
-            .where((f) => (f.proteinPerRupee ?? 0.0) >= 1.2)
-            .toList();
+      case 'Budget Saver (>1.2 g/₹)':
+        return foods.where((f) => (f.proteinPerRupee ?? 0.0) >= 1.2).toList();
       case filterAll:
       default:
         return List.from(foods);

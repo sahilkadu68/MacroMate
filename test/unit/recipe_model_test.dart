@@ -4,43 +4,46 @@ import 'package:macromate_india/data/models/shopping_item.dart';
 
 void main() {
   group('Recipe & ShoppingItem Unit Tests', () {
-    test('Recipe correctly calculates total and per-serving nutrition and cost', () {
-      final recipe = Recipe(
-        name: 'High Protein Soya Paneer Bhurji',
-        description: 'Nutritious student gym dinner',
-        servings: 2,
-        ingredients: [
-          RecipeIngredient(
-            foodName: 'Soya Chunks',
-            quantity: 50.0,
-            measurementUnit: 'g',
-            calories: 172.5,
-            protein: 26.0,
-            carbs: 16.5,
-            fat: 0.25,
-            cost: 6.0,
-          ),
-          RecipeIngredient(
-            foodName: 'Paneer',
-            quantity: 100.0,
-            measurementUnit: 'g',
-            calories: 265.0,
-            protein: 18.0,
-            carbs: 3.0,
-            fat: 20.0,
-            cost: 45.0,
-          ),
-        ],
-      );
+    test(
+      'Recipe correctly calculates total and per-serving nutrition and cost',
+      () {
+        final recipe = Recipe(
+          name: 'High Protein Soya Paneer Bhurji',
+          description: 'Nutritious student gym dinner',
+          servings: 2,
+          ingredients: [
+            RecipeIngredient(
+              foodName: 'Soya Chunks',
+              quantity: 50.0,
+              measurementUnit: 'g',
+              calories: 172.5,
+              protein: 26.0,
+              carbs: 16.5,
+              fat: 0.25,
+              cost: 6.0,
+            ),
+            RecipeIngredient(
+              foodName: 'Paneer',
+              quantity: 100.0,
+              measurementUnit: 'g',
+              calories: 265.0,
+              protein: 18.0,
+              carbs: 3.0,
+              fat: 20.0,
+              cost: 45.0,
+            ),
+          ],
+        );
 
-      expect(recipe.totalCalories, 437.5);
-      expect(recipe.totalProtein, 44.0);
-      expect(recipe.totalCost, 51.0);
+        expect(recipe.totalCalories, 437.5);
+        expect(recipe.totalProtein, 44.0);
+        expect(recipe.totalCost, 51.0);
 
-      expect(recipe.perServingCalories, 218.75);
-      expect(recipe.perServingProtein, 22.0);
-      expect(recipe.perServingCost, 25.5);
-    });
+        expect(recipe.perServingCalories, 218.75);
+        expect(recipe.perServingProtein, 22.0);
+        expect(recipe.perServingCost, 25.5);
+      },
+    );
 
     test('Recipe serialization and deserialization preserves all values', () {
       final original = Recipe(

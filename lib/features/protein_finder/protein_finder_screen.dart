@@ -38,8 +38,14 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
     super.didChangeDependencies();
     final foodProvider = Provider.of<FoodProvider>(context);
     if (!_initializedWithDefaults && foodProvider.allFoods.isNotEmpty) {
-      final profile = Provider.of<ProfileProvider>(context, listen: false).profile;
-      final mealSummary = Provider.of<MealProvider>(context, listen: false).dailyTotals;
+      final profile = Provider.of<ProfileProvider>(
+        context,
+        listen: false,
+      ).profile;
+      final mealSummary = Provider.of<MealProvider>(
+        context,
+        listen: false,
+      ).dailyTotals;
       final remaining = NutritionService.calculateRemainingTargets(
         profile: profile,
         consumed: mealSummary,
@@ -54,7 +60,10 @@ class _ProteinFinderScreenState extends State<ProteinFinderScreen> {
 
       _proteinController.text = pTarget.round().toString();
       _budgetController.text = bTarget.round().toString();
-      _dietPreference = profile.dietaryPreference;
+      _dietPreference =
+          AppConstants.dietaryPreferences.contains(profile.dietaryPreference)
+          ? profile.dietaryPreference
+          : AppConstants.dietAll;
       _initializedWithDefaults = true;
 
       // Automatically generate initial recommendations once foods are available
