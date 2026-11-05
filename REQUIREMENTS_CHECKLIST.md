@@ -87,3 +87,10 @@ Legend: [x] verified at the stated scope; [~] partial; [ ] pending; [!] blocked.
 - [~] Android emulator is now online. Installed checkpoint APK and observed welcome/registration screens; full journey and airplane-mode acceptance remain pending.
 - [ ] Built-in prepared dishes still require sourced structured ingredient quantities. Saved user recipes have a complete ingredient-cost/planner/shopping path; catalogue dish estimates do not yet have that path.
 - [ ] Reusable weekly plans and export/restore remain future opportunities, not completed features.
+
+## Visible-function bug fix — 5 November 2026
+- [x] Fixed pushed pages/dialogs losing account providers: account scope now wraps MaterialApp and its Navigator. New widget regression opens both a page and dialog and verifies account access.
+- [x] Prevented profile form initialization from default data: AuthGate waits for saved profile load and shows retry on load failure before creating tracker screens. Account/session changes reset the Navigator.
+- [x] Registration uses a dedicated Username field and username-only validation. Existing email accounts have a separate Email sign-in mode.
+- [x] Two account-entry/routing widget tests passed; static analysis reports no issues.
+- [~] Android visual journey still requires runtime acceptance; these fixes establish the shared route/provider boundary, not an assertion that every individual button was manually exercised.

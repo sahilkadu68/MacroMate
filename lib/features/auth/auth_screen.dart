@@ -16,6 +16,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   bool _register = false;
+  bool _legacyEmail = false;
   bool _showPassword = false;
   bool _busy = false;
   String? _message;
@@ -30,10 +31,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
   String? _identifierValidator(String? value) {
     final identifier = value?.trim() ?? '';
-    final isEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(identifier);
-    final isUsername = RegExp(r'^[a-zA-Z0-9_.-]{3,32}$').hasMatch(identifier);
-    if (isEmail || isUsername) return null;
-    return 'Enter a valid email or a username (3–32 letters/numbers).';
+    if (!_register && _legacyEmail) {
+      return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(identifier)
+          ? null
+          : 'Enter your existing account email.';
+    }
+    if (RegExp(r'^[a-zA-Z0-9_.-]{3,32}$').hasMatch(identifier)) return null;
+    return 'Use 3–32 letters, numbers, dots, underscores or hyphens.';
   }
 
   Future<void> _submit() async {
@@ -104,12 +108,14 @@ class _AuthScreenState extends State<AuthScreen> {
                         TextFormField(
                           controller: _identifier,
                           validator: _identifierValidator,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.text,
                           textInputAction: TextInputAction.next,
                           autofillHints: const [AutofillHints.username],
-                          decoration: const InputDecoration(
-                            labelText: 'Email or username',
-                            prefixIcon: Icon(Icons.person_outline),
+                          decoration: InputDecoration(
+                            labelText: !_register && _legacyEmail
+                                ? 'Email'
+                                : 'Username',
+                            prefixIcon: const Icon(Icons.person_outline),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -193,6 +199,20 @@ class _AuthScreenState extends State<AuthScreen> {
                           : 'Create a local account',
                     ),
                   ),
+                  if (!_register)
+                    TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () => setState(() {
+                              _legacyEmail = !_legacyEmail;
+                              _identifier.clear();
+                            }),
+                      child: Text(
+                        _legacyEmail
+                            ? 'Use username instead'
+                            : 'Sign in with an existing email account',
+                      ),
+                    ),
                 ],
               ),
             ),

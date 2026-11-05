@@ -24,7 +24,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    widget.auth.initialize();
+    if (widget.auth.loading) widget.auth.initialize();
   }
 
   @override
@@ -42,20 +42,49 @@ class _AuthGateState extends State<AuthGate> {
         if (!account.onboardingComplete) {
           return OnboardingScreen(auth: widget.auth);
         }
-        return MultiProvider(
-          key: ValueKey(account.id),
-          providers: [
-            ChangeNotifierProvider.value(value: widget.auth),
-            ChangeNotifierProvider(create: (_) => ProfileProvider()),
-            ChangeNotifierProvider(create: (_) => FoodProvider()),
-            ChangeNotifierProvider(create: (_) => MealProvider()),
-            ChangeNotifierProvider(create: (_) => TrackingProvider()),
-            ChangeNotifierProvider(create: (_) => ProteinFinderProvider()),
-            ChangeNotifierProvider(create: (_) => PlanProvider()),
-          ],
-          child: const MainScaffold(),
-        );
+        final profile = context.watch<ProfileProvider>();
+        if (profile.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (profile.errorMessage != null) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Could not load your saved profile.'),
+                  FilledButton(
+                    onPressed: profile.loadProfile,
+                    child: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        return const MainScaffold();
       },
     );
   }
+}
+
+class AccountScope extends StatelessWidget {
+  const AccountScope({super.key, required this.auth, required this.child});
+  final AuthController auth;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => MultiProvider(
+    providers: [
+      ChangeNotifierProvider.value(value: auth),
+      ChangeNotifierProvider(create: (_) => ProfileProvider()),
+      ChangeNotifierProvider(create: (_) => FoodProvider()),
+      ChangeNotifierProvider(create: (_) => MealProvider()),
+      ChangeNotifierProvider(create: (_) => TrackingProvider()),
+      ChangeNotifierProvider(create: (_) => ProteinFinderProvider()),
+      ChangeNotifierProvider(create: (_) => PlanProvider()),
+    ],
+    child: child,
+  );
 }

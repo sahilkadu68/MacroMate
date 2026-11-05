@@ -10,13 +10,24 @@ class MacroMateApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
-      home: AuthGate(auth: auth),
+    return AnimatedBuilder(
+      animation: auth,
+      builder: (context, _) {
+        final account = auth.account;
+        final app = MaterialApp(
+          key: ValueKey(
+            'session_${account?.id}_${account?.onboardingComplete}',
+          ),
+          title: AppConstants.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.light,
+          home: AuthGate(auth: auth),
+        );
+        if (account == null || !account.onboardingComplete) return app;
+        return AccountScope(key: ValueKey(account.id), auth: auth, child: app);
+      },
     );
   }
 }
