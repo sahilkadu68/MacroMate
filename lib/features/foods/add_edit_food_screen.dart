@@ -128,7 +128,18 @@ class _AddEditFoodScreenState extends State<AddEditFoodScreen> {
       purchaseUnit: _selectedUnit,
       priceSource: _sourceController.text.trim().isNotEmpty
           ? _sourceController.text.trim()
-          : 'User custom entry',
+          : 'User-entered local price',
+      priceRegion:
+          widget.existingFood?.priceRegion ??
+          'Mumbai, Maharashtra (user estimate)',
+      priceConfidence: 'User entered; not independently verified',
+      isUserPrice: true,
+      cuisine: widget.existingFood?.cuisine ?? 'Pan-Indian',
+      entryType: widget.existingFood?.entryType ?? 'Ingredient',
+      mealTypes: widget.existingFood?.mealTypes ?? const [],
+      ingredients: widget.existingFood?.ingredients ?? '',
+      lastPriceUpdate: DateTime.now(),
+      isPriceEstimate: true,
       sourceNote: _sourceController.text.trim().isNotEmpty
           ? _sourceController.text.trim()
           : 'User added custom food',

@@ -7,6 +7,8 @@ import '../../data/models/meal_entry.dart';
 import '../../data/models/recipe.dart';
 import '../../providers/meal_provider.dart';
 import '../../providers/plan_provider.dart';
+import '../../providers/food_provider.dart';
+import '../../services/recipe_cost_service.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
 class RecipeDetailSheet extends StatelessWidget {
@@ -15,6 +17,10 @@ class RecipeDetailSheet extends StatelessWidget {
   const RecipeDetailSheet({super.key, required this.recipe});
 
   void _logServingToMeal(BuildContext context, String mealType) async {
+    final recipe = RecipeCostService.refresh(
+      this.recipe,
+      context.read<FoodProvider>().allFoods,
+    );
     final mealProvider = Provider.of<MealProvider>(context, listen: false);
     final entry = MealEntry(
       foodId: null,
@@ -88,6 +94,10 @@ class RecipeDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final recipe = RecipeCostService.refresh(
+      this.recipe,
+      context.watch<FoodProvider>().allFoods,
+    );
     final theme = Theme.of(context);
     final planProvider = Provider.of<PlanProvider>(context, listen: false);
 
@@ -154,6 +164,11 @@ class RecipeDetailSheet extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 14),
+            const Text(
+              'Estimates use current matching ingredients. Deleted ingredients retain saved values. Logged meals keep their original snapshots.',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 8),
 
             // Per serving stat bar
             Container(

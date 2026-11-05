@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/validators/input_validators.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/tracking_provider.dart';
+import '../../services/auth_service.dart';
 import 'widgets/mifflin_calculator_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -30,6 +31,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String _nutritionGoal;
 
   bool _initialized = false;
+
+  Future<void> _changePassword() async {
+    final auth = context.read<AuthController>();
+    final current = TextEditingController();
+    final next = TextEditingController();
+    final confirm = TextEditingController();
+    String? error;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Change password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: current,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Current password',
+                ),
+              ),
+              TextField(
+                controller: next,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'New password (8+ characters)',
+                ),
+              ),
+              TextField(
+                controller: confirm,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm new password',
+                ),
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (next.text.length < 8 || next.text != confirm.text) {
+                  setDialogState(
+                    () => error = next.text.length < 8
+                        ? 'Use at least 8 characters.'
+                        : 'Passwords do not match.',
+                  );
+                  return;
+                }
+                try {
+                  await auth.changePassword(current.text, next.text);
+                  if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+                } on LocalAuthException catch (exception) {
+                  setDialogState(() => error = exception.message);
+                }
+              },
+              child: const Text('Update password'),
+            ),
+          ],
+        ),
+      ),
+    );
+    current.dispose();
+    next.dispose();
+    confirm.dispose();
+    if (accepted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password updated on this device.')),
+      );
+    }
+  }
+
+  Future<void> _deleteLocalAccount() async {
+    final auth = context.read<AuthController>();
+    final password = TextEditingController();
+    String? error;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Delete local account?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This permanently removes this account and its on-device meals, goals, recipes, and tracking records.',
+              ),
+              TextField(
+                controller: password,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm password',
+                ),
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonal(
+              onPressed: () async {
+                try {
+                  await auth.deleteAccount(password.text);
+                  if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+                } on LocalAuthException catch (exception) {
+                  setDialogState(() => error = exception.message);
+                } catch (_) {
+                  setDialogState(
+                    () =>
+                        error = 'The account could not be deleted. Try again.',
+                  );
+                }
+              },
+              child: const Text('Delete account'),
+            ),
+          ],
+        ),
+      ),
+    );
+    password.dispose();
+    if (accepted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Local account and its data were deleted.'),
+        ),
+      );
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -675,10 +831,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Offline privacy note
+                    OutlinedButton.icon(
+                      onPressed: () => context.read<AuthController>().signOut(),
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Log out'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _changePassword,
+                      icon: const Icon(Icons.password_outlined),
+                      label: const Text('Change local password'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _deleteLocalAccount,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete local account and data'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Storage limitation note
                     Center(
                       child: Text(
-                        'MacroMate India • 100% Offline SQLite Storage • No Remote Tracking',
+                        'This local account is only for this device. Export or device backup is not available.',
                         style: TextStyle(
                           fontSize: 11,
                           color: theme.colorScheme.onSurface.withAlpha(120),

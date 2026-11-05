@@ -3,10 +3,13 @@ import '../models/food_item.dart';
 
 class IndianFoodsSeed {
   static const String disclaimer =
-      'Nutrition values based on ICMR-NIN Indian Food Composition Tables (IFCT) and standard references. '
-      'Prices are representative student and retail supermarket estimates in India (2024–2026: Blinkit/Zepto/Local Mandi averages); '
-      'users can easily edit any price to reflect local mess/vendor rates.';
+      'Nutrition and price values are unverified starter estimates. No row-level source, '
+      'market, or capture record is stored. Do not treat these values as official '
+      'ICMR-NIN data or current local prices. Review and replace estimates with a '
+      'measured local price before relying on a plan.';
 
+  // Legacy non-null schema field. For seed rows this is a placeholder catalog
+  // timestamp, not a measured price observation date.
   static final DateTime _baseDate = DateTime(2026, 1, 1);
 
   static List<FoodItem> get initialFoods => [
@@ -26,7 +29,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 40.0,
-      priceSource: 'Blinkit / Zepto retail average (₹130/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -46,8 +49,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Hydrated boiled basis (~2.5x cooked yield from ₹130/kg dry). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -68,7 +70,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 40.0,
-      priceSource: 'Local grocery/supermarket average (₹130/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -88,8 +90,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 40.0,
-      priceSource:
-          'Local grocery / mandi retail estimate (₹140/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -109,8 +110,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked weight yield basis (~₹90/kg dry yielding 2.3kg boiled). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Boiled whole Bengal gram without heavy oil gravy.',
@@ -129,8 +129,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked weight yield basis (~₹110/kg dry yielding ~2.4kg boiled). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Boiled white chickpeas, high in prebiotic dietary fiber.',
@@ -149,8 +148,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked weight yield basis (~₹130/kg dry yielding ~2.5kg boiled). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Boiled red kidney beans without heavy cream or butter.',
@@ -169,8 +167,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked mess dal basis (~₹120/kg dry yielding ~3.4kg cooked dal). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Lightly tempered yellow split moong dal, easy to digest.',
@@ -189,8 +186,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked dal basis (~₹150/kg dry toor dal retail). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Classic Indian pigeon pea home dal preparation.',
@@ -209,8 +205,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked dal basis (~₹110/kg dry split red lentils). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -230,8 +225,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Homemade sprout basis from whole moong (~₹110/kg yielding ~2.8kg sprouts). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -251,8 +245,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Blinkit / supermarket fresh tofu pack (~₹45 per 200g pack = ₹225/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -272,8 +265,7 @@ class IndianFoodsSeed {
       packageQuantity: 500.0,
       purchaseUnit: 'pack',
       servingSize: 100.0,
-      priceSource:
-          'Homemade pancake cost from ₹90/kg besan + spices. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Popular Indian student quick breakfast chilla.',
@@ -295,8 +287,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Amul / Mother Dairy / Mandi fresh retail (~₹80-85 per 200g pack = ₹400/kg; ₹360-380 local dairy). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -316,8 +307,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Packaged commercial low-fat paneer (~₹90 per 200g pack). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Skimmed milk commercial paneer with reduced fat content.',
@@ -337,8 +327,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'litre',
       servingSize: 250.0,
-      priceSource:
-          'Government & dairy co-op pouch MRP (₹28 per 500ml pouch = ₹56/litre). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Standard Indian pasteurised homogenized toned milk pouch.',
@@ -358,8 +347,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'litre',
       servingSize: 250.0,
-      priceSource:
-          'Pouch retail MRP (₹26 per 500ml pouch = ₹52/litre). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Low-fat milk option for fat loss phases.',
@@ -378,8 +366,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Pouch dahi / homemade setting (~₹32 per 400g pouch). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Probiotic plain set yoghurt made from cow/toned milk.',
@@ -398,8 +385,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Homemade whey-strained curd (~2.5x curd used) or packaged plain Greek yogurt. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Whey-strained thick curd with concentrated protein.',
@@ -419,8 +405,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'litre',
       servingSize: 200.0,
-      priceSource:
-          'Tetrapack / pouch MRP (~₹15 per 500ml pouch = ₹30/litre). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Refreshing low-calorie probiotic beverage.',
@@ -439,7 +424,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'litre',
       servingSize: 250.0,
-      priceSource: 'Tetrapack 1L carton retail (₹100-120/L). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -461,8 +446,7 @@ class IndianFoodsSeed {
       packageQuantity: 12.0,
       purchaseUnit: 'dozen',
       servingSize: 1.0,
-      priceSource:
-          'Indian retail tray/dozen market average (₹84/dozen = ₹7/egg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -482,8 +466,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 50.0,
-      priceSource:
-          'Based on ₹7/egg @ 50g each = ₹140/kg (1 egg serving = ₹7.00). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -503,8 +486,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 33.0,
-      priceSource:
-          'Separated from ₹7 whole eggs (~33g white per egg = ₹7 per 33g = ~₹210/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Pure raw albumin with zero cholesterol and minimal fat.',
@@ -523,8 +505,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Cooked white separated from boiled egg (~3 boiled whites ~100g = ₹21). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Fat-free pure albumin source for cutting/fat loss phases.',
@@ -543,8 +524,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          '2 eggs (₹14) + onion/tomato/spices/light oil (~₹6) = ₹20 per serving. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -564,8 +544,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          '2 eggs (₹14) + 5g oil/butter (~₹4) = ₹18-20 per 100g omelette. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Classic pan-fried omelette with minimal cooking oil.',
@@ -584,8 +563,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          '3 egg whites (₹21) + cooking spray/light seasoning = ₹22 per 100g. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -605,8 +583,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 200.0,
-      priceSource:
-          '2 eggs (₹14) + onion-tomato masala gravy (₹16) = ₹30-32 per 200g bowl. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Boiled eggs in homestyle Indian onion-tomato spiced curry.',
@@ -627,8 +604,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Blinkit / Zepto / FreshToHome / local butcher fresh rate (₹280-320/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Lean boneless skinless chicken breast fillet in raw state.',
@@ -647,8 +623,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Cooked weight yield basis (1kg raw boneless breast yields ~750g cooked = ~₹400/kg cooked). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -668,8 +643,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Local poultry shop / mandi bone-in curry cut rate (₹200-230/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -689,8 +663,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked edible meat portion from standard curry cut chicken. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -710,8 +683,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Cooked yield from ₹260/kg raw boneless thigh cuts. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -731,8 +703,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Cooked chicken mince based on ₹250/kg raw keema. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Minced chicken cooked with ginger-garlic and light spices.',
@@ -751,8 +722,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Local poultry market rate (₹120-150/kg raw). Super budget student hero. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -774,8 +744,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Local fish mandi / wet market price across Eastern and Northern India (₹200-240/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -795,8 +764,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Cooked edible portion yield based on ₹220/kg raw fish. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Pan-seared or light mustard curry freshwater Rohu fish.',
@@ -815,7 +783,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource: 'Local wet market Katla carp (₹220-250/kg raw). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -835,8 +803,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Coastal and urban retail estimate (₹180-240/kg). Super economical student fish. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -856,8 +823,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Local coastal market rate (₹130-180/kg). High protein budget saver. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -877,8 +843,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Supermarket / coastal retail price (₹650-850/kg). Premium option. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -898,7 +863,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource: 'Retail fish vendor estimate (₹700-800/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -918,8 +883,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Blinkit / Zepto cleaned prawns pack (~₹250 per 500g = ₹500/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Peeled sea prawns, nearly pure protein with negligible fat.',
@@ -939,8 +903,7 @@ class IndianFoodsSeed {
       packageQuantity: 130.0,
       purchaseUnit: 'pack',
       servingSize: 130.0,
-      priceSource:
-          'Packaged 185g can (130g drained meat) retail price in India (₹130-150/can). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -960,8 +923,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Local butcher rate (₹750-850/kg raw bone-in). Edible meat portion. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -983,8 +945,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 35.0,
-      priceSource:
-          'Atta raw cost (~₹40/kg yields ~1.4kg cooked rotis = ~₹2.80 per roti). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1004,8 +965,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Raw rice (~₹55/kg yields ~2.6kg cooked boiled rice = ₹22-25/kg cooked). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Boiled drained Indian parboiled or sona masoori white rice.',
@@ -1024,8 +984,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Raw brown rice (~₹90/kg yields ~2.3kg cooked rice = ~₹40/kg cooked). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1046,7 +1005,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 50.0,
-      priceSource: 'Supermarket 1kg pouch retail (₹150-180/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Plain rolled oats, high in soluble beta-glucan fiber.',
@@ -1065,8 +1024,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 200.0,
-      priceSource:
-          'Cooked porridge yield (~4x cooked weight from water). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Cooked porridge with water, warm soothing complex carbs.',
@@ -1085,8 +1043,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Prepared kanda poha with light peanuts and mustard tempering. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1106,8 +1063,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource:
-          'Semolina cooked porridge cost from ₹45/kg suji + veggies. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1127,8 +1083,7 @@ class IndianFoodsSeed {
       packageQuantity: 400.0,
       purchaseUnit: 'pack',
       servingSize: 60.0,
-      priceSource:
-          'Standard 400g commercial loaf MRP (₹45/loaf = ~₹6.75 per 2 slices). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Commercial whole wheat brown bread loaf.',
@@ -1149,8 +1104,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 30.0,
-      priceSource:
-          'Mandi / retail average (₹140-160/kg). Student energy hero. $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1170,7 +1124,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 25.0,
-      priceSource: 'Indian wholesale/retail market (₹800-900/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1190,7 +1144,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 20.0,
-      priceSource: 'Retail shelled kernels (₹1100-1300/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1210,7 +1164,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 15.0,
-      priceSource: 'Online grocery average (₹450-550/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'High soluble dietary fiber, calcium, and mucilage.',
@@ -1229,8 +1183,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 15.0,
-      priceSource:
-          'Super affordable Indian seed retail (₹140-180/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1250,7 +1203,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 25.0,
-      priceSource: 'Supermarket retail average (₹550-650/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1272,8 +1225,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Mandi / street cart rate (₹40-60/dozen = ~₹45-50/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1293,8 +1245,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 120.0,
-      priceSource:
-          'Himachal / Kashmiri apple retail (₹140-180/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Crisp fruit rich in quercetin and soluble pectin fiber.',
@@ -1313,7 +1264,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 150.0,
-      priceSource: 'Local mandi potato retail (₹25-35/kg). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote: 'Economical clean starch; top satiety index carb source.',
@@ -1332,8 +1283,7 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 100.0,
-      priceSource:
-          'Fresh bunch mandi rate (₹15-20 per 500g bunch). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
@@ -1356,13 +1306,13 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 33.0,
-      priceSource:
-          'Unflavoured 80% raw whey concentrate 1kg tub retail (₹1800-2200/kg = ~₹66/scoop of 25.7g protein). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
           'Standard unflavoured whey concentrate powder with rapid leucine absorption.',
     ),
+    ...additionalFoods,
     FoodItem(
       name: 'Peanut Butter (100% Roasted Peanuts)',
       brand: 'Pintola / Disano Natural',
@@ -1378,12 +1328,322 @@ class IndianFoodsSeed {
       packageQuantity: 1000.0,
       purchaseUnit: 'kg',
       servingSize: 32.0,
-      priceSource:
-          'Unsweetened 1kg jar retail on Amazon / Blinkit (₹300-340/kg = ~₹10.20 per 2 tbsp serving). $disclaimer',
+      priceSource: 'Unverified starter estimate. $disclaimer',
       lastPriceUpdate: _baseDate,
       isPriceEstimate: true,
       sourceNote:
           'Pure roasted peanuts without hydrogenated oils, added sugar, or salt.',
     ),
   ];
+
+  static List<FoodItem> get additionalFoods => [
+    _regionalMeal(
+      name: 'Idli with Sambar',
+      cuisine: 'South Indian',
+      mealTypes: ['Breakfast', 'Lunch'],
+      ingredients: 'Idli batter, toor dal, vegetables, tamarind',
+      calories: 145,
+      protein: 6,
+      carbs: 27,
+      fat: 2,
+      rupeesPerKg: 150,
+    ),
+    _regionalMeal(
+      name: 'Plain Dosa with Sambar',
+      cuisine: 'South Indian',
+      mealTypes: ['Breakfast', 'Dinner'],
+      ingredients: 'Rice, urad dal, oil, sambar',
+      calories: 175,
+      protein: 5,
+      carbs: 31,
+      fat: 4,
+      rupeesPerKg: 190,
+    ),
+    _regionalMeal(
+      name: 'Masala Dosa',
+      cuisine: 'South Indian',
+      mealTypes: ['Breakfast', 'Lunch'],
+      ingredients: 'Dosa batter, potato, onion, oil, chutney',
+      calories: 210,
+      protein: 5,
+      carbs: 34,
+      fat: 6,
+      rupeesPerKg: 220,
+    ),
+    _regionalMeal(
+      name: 'Vegetable Uttapam',
+      cuisine: 'South Indian',
+      mealTypes: ['Breakfast', 'Dinner'],
+      ingredients: 'Rice, urad dal, onion, tomato, vegetables',
+      calories: 165,
+      protein: 5,
+      carbs: 29,
+      fat: 3,
+      rupeesPerKg: 180,
+    ),
+    _regionalMeal(
+      name: 'Gujarati Methi Thepla',
+      cuisine: 'Gujarati',
+      mealTypes: ['Breakfast', 'Snack'],
+      ingredients: 'Whole wheat flour, fenugreek leaves, curd, oil',
+      calories: 245,
+      protein: 7,
+      carbs: 36,
+      fat: 8,
+      rupeesPerKg: 180,
+    ),
+    _regionalMeal(
+      name: 'Maharashtrian Thalipeeth',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Breakfast', 'Snack'],
+      ingredients: 'Bhajani flour, onion, coriander, oil',
+      calories: 230,
+      protein: 8,
+      carbs: 34,
+      fat: 7,
+      rupeesPerKg: 190,
+    ),
+    _regionalMeal(
+      name: 'Vada Pav',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Snack', 'Lunch'],
+      ingredients: 'Potato, gram flour, pav, chutney, frying oil',
+      calories: 285,
+      protein: 7,
+      carbs: 43,
+      fat: 9,
+      rupeesPerKg: 180,
+    ),
+    _regionalMeal(
+      name: 'Pav Bhaji',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Mixed vegetables, pav, butter or oil',
+      calories: 190,
+      protein: 5,
+      carbs: 27,
+      fat: 7,
+      rupeesPerKg: 210,
+    ),
+    _regionalMeal(
+      name: 'Misal Pav',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Breakfast', 'Lunch'],
+      ingredients: 'Sprouted moth beans, farsan, pav, onion',
+      calories: 205,
+      protein: 9,
+      carbs: 31,
+      fat: 5,
+      rupeesPerKg: 220,
+    ),
+    _regionalMeal(
+      name: 'Vegetable Moong Dal Khichdi',
+      cuisine: 'Pan-Indian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Rice, moong dal, vegetables, cumin',
+      calories: 135,
+      protein: 6,
+      carbs: 24,
+      fat: 2,
+      rupeesPerKg: 140,
+    ),
+    _regionalMeal(
+      name: 'Rajma Chawal',
+      cuisine: 'North Indian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Rajma, rice, tomato, onion, spices',
+      calories: 155,
+      protein: 7,
+      carbs: 27,
+      fat: 2,
+      rupeesPerKg: 170,
+    ),
+    _regionalMeal(
+      name: 'Chole Chawal',
+      cuisine: 'Punjabi',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Chickpeas, rice, tomato, onion, spices',
+      calories: 165,
+      protein: 7,
+      carbs: 28,
+      fat: 3,
+      rupeesPerKg: 180,
+    ),
+    _regionalMeal(
+      name: 'Punjabi Kadhi Pakora with Rice',
+      cuisine: 'Punjabi',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Curd, gram flour, pakora, rice, oil',
+      calories: 175,
+      protein: 6,
+      carbs: 25,
+      fat: 5,
+      rupeesPerKg: 190,
+    ),
+    _regionalMeal(
+      name: 'Vegetable Pulao',
+      cuisine: 'North Indian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Rice, peas, carrots, beans, oil, spices',
+      calories: 155,
+      protein: 4,
+      carbs: 28,
+      fat: 4,
+      rupeesPerKg: 175,
+    ),
+    _regionalMeal(
+      name: 'Egg Bhurji with Pav',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Breakfast', 'Snack'],
+      dietary: AppConstants.dietEgg,
+      ingredients: 'Egg, onion, tomato, pav, oil',
+      calories: 205,
+      protein: 10,
+      carbs: 20,
+      fat: 9,
+      rupeesPerKg: 260,
+    ),
+    _regionalMeal(
+      name: 'Palak Paneer with Roti',
+      cuisine: 'North Indian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Spinach, paneer, tomato, roti, oil',
+      calories: 175,
+      protein: 9,
+      carbs: 19,
+      fat: 7,
+      rupeesPerKg: 260,
+    ),
+    _regionalMeal(
+      name: 'Bengali Fish Curry with Rice',
+      cuisine: 'Bengali',
+      mealTypes: ['Lunch', 'Dinner'],
+      dietary: AppConstants.dietNonVeg,
+      ingredients: 'Rohu, rice, mustard, tomato, spices',
+      calories: 165,
+      protein: 11,
+      carbs: 20,
+      fat: 4,
+      rupeesPerKg: 340,
+    ),
+    _regionalMeal(
+      name: 'Chicken Biryani',
+      cuisine: 'Hyderabadi',
+      mealTypes: ['Lunch', 'Dinner'],
+      dietary: AppConstants.dietNonVeg,
+      ingredients: 'Chicken, basmati rice, onion, curd, oil, spices',
+      calories: 205,
+      protein: 12,
+      carbs: 25,
+      fat: 6,
+      rupeesPerKg: 380,
+    ),
+    _regionalMeal(
+      name: 'Sambar Rice',
+      cuisine: 'South Indian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Rice, toor dal, vegetables, tamarind',
+      calories: 140,
+      protein: 5,
+      carbs: 26,
+      fat: 2,
+      rupeesPerKg: 145,
+    ),
+    _regionalMeal(
+      name: 'Roasted Makhana',
+      cuisine: 'Pan-Indian',
+      mealTypes: ['Snack', 'Pre-workout'],
+      ingredients: 'Fox nuts, small amount of oil or ghee',
+      calories: 360,
+      protein: 9,
+      carbs: 77,
+      fat: 1,
+      rupeesPerKg: 900,
+    ),
+    _regionalMeal(
+      name: 'Sprouted Moong Chaat',
+      cuisine: 'Pan-Indian',
+      mealTypes: ['Snack', 'Pre-workout'],
+      ingredients: 'Moong sprouts, tomato, onion, lemon',
+      calories: 95,
+      protein: 7,
+      carbs: 16,
+      fat: 1,
+      rupeesPerKg: 200,
+    ),
+    _regionalMeal(
+      name: 'Vegetable Curd Sandwich',
+      cuisine: 'Pan-Indian',
+      mealTypes: ['Snack', 'Breakfast'],
+      ingredients: 'Whole wheat bread, curd, cucumber, carrot',
+      calories: 185,
+      protein: 7,
+      carbs: 28,
+      fat: 5,
+      rupeesPerKg: 220,
+    ),
+    _regionalMeal(
+      name: 'Pithla with Jowar Bhakri',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Lunch', 'Dinner'],
+      ingredients: 'Gram flour, jowar flour, onion, garlic, oil',
+      calories: 205,
+      protein: 8,
+      carbs: 34,
+      fat: 5,
+      rupeesPerKg: 170,
+    ),
+    _regionalMeal(
+      name: 'Poha with Peanuts and Peas',
+      cuisine: 'Maharashtrian',
+      mealTypes: ['Breakfast', 'Snack'],
+      ingredients: 'Flattened rice, peanuts, peas, onion, oil',
+      calories: 175,
+      protein: 5,
+      carbs: 29,
+      fat: 5,
+      rupeesPerKg: 160,
+    ),
+  ];
+
+  static FoodItem _regionalMeal({
+    required String name,
+    required String cuisine,
+    required List<String> mealTypes,
+    required String ingredients,
+    required double calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+    required double rupeesPerKg,
+    String dietary = AppConstants.dietVeg,
+  }) => FoodItem(
+    name: name,
+    category:
+        dietary == AppConstants.dietNonVeg || dietary == AppConstants.dietEgg
+        ? AppConstants.catEggsMeat
+        : AppConstants.catStaples,
+    dietaryClassification: dietary,
+    caloriesPer100: calories,
+    proteinPer100: protein,
+    carbsPer100: carbs,
+    fatPer100: fat,
+    measurementUnit: AppConstants.unitGrams,
+    preparationBasis: AppConstants.prepCooked,
+    packagePrice: rupeesPerKg,
+    packageQuantity: 1000,
+    purchaseUnit: 'kg',
+    servingSize: 250,
+    priceSource: 'MacroMate offline Mumbai planning estimate; not a shop quote',
+    lastPriceUpdate: DateTime(2026, 11, 5),
+    isPriceEstimate: true,
+    priceRegion: 'Mumbai, Maharashtra (estimate; not observed locally)',
+    priceConfidence: 'Low / recipe estimate',
+    cuisine: cuisine,
+    entryType: 'Prepared dish',
+    mealTypes: mealTypes,
+    ingredients: ingredients,
+    sourceNote:
+        'Approximate recipe-level values only. Preparation, oil, recipe and serving size vary; this is not a lab-verified nutrition entry or current market price.',
+  );
 }

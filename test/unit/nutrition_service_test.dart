@@ -56,6 +56,38 @@ void main() {
       );
     });
 
+    test('non-finite calculation inputs are rejected safely', () {
+      expect(
+        NutritionService.calculateNutrient(
+          nutrientPer100: double.infinity,
+          quantity: 100,
+        ),
+        0,
+      );
+      expect(
+        NutritionService.calculateNutrient(
+          nutrientPer100: 20,
+          quantity: double.nan,
+        ),
+        0,
+      );
+      expect(
+        NutritionService.calculateServingCost(
+          unitPrice: 100,
+          priceBasis: double.infinity,
+          quantity: 100,
+        ),
+        0,
+      );
+      expect(
+        NutritionService.calculateProteinEfficiency(
+          proteinGrams: double.infinity,
+          costRupees: 10,
+        ),
+        isNull,
+      );
+    });
+
     test(
       'calculateProteinEfficiency prevents division by zero and handles edge cases',
       () {

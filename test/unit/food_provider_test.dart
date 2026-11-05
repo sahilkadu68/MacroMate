@@ -2,8 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:macromate_india/core/constants/app_constants.dart';
 import 'package:macromate_india/data/models/food_item.dart';
 import 'package:macromate_india/data/repositories/food_repository.dart';
+import 'package:macromate_india/data/repositories/plan_repository.dart';
 import 'package:macromate_india/data/seed/indian_foods_seed.dart';
 import 'package:macromate_india/providers/food_provider.dart';
+
+class MockPlanRepository extends PlanRepository {
+  @override
+  Future<Set<int>> getFavoriteFoodIds() async => {};
+}
 
 class MockFoodRepository implements FoodRepository {
   final List<FoodItem> _foods = List.from(IndianFoodsSeed.initialFoods);
@@ -33,7 +39,10 @@ void main() {
     late FoodProvider foodProvider;
 
     setUp(() async {
-      foodProvider = FoodProvider(repository: MockFoodRepository());
+      foodProvider = FoodProvider(
+        repository: MockFoodRepository(),
+        planRepository: MockPlanRepository(),
+      );
       await foodProvider.loadFoods();
     });
 

@@ -107,7 +107,18 @@ class RecommendationService {
       if (food.id != null && excludedFoodIds.contains(food.id)) {
         return false;
       }
-      if (food.estimatedUnitPrice <= 0 || food.priceQuantityBasis <= 0) {
+      if (!food.estimatedUnitPrice.isFinite ||
+          !food.priceQuantityBasis.isFinite ||
+          !food.caloriesPer100.isFinite ||
+          !food.proteinPer100.isFinite ||
+          !food.carbsPer100.isFinite ||
+          !food.fatPer100.isFinite ||
+          food.estimatedUnitPrice <= 0 ||
+          food.priceQuantityBasis <= 0 ||
+          food.caloriesPer100 < 0 ||
+          food.proteinPer100 < 0 ||
+          food.carbsPer100 < 0 ||
+          food.fatPer100 < 0) {
         return false;
       }
       return DietaryService.isFoodEligible(
@@ -124,7 +135,14 @@ class RecommendationService {
     required List<FoodItem> allFoods,
     required RecommendationCriteria criteria,
   }) {
-    if (criteria.remainingProteinTarget <= 0 || criteria.remainingBudget <= 0) {
+    if (!criteria.remainingProteinTarget.isFinite ||
+        !criteria.remainingBudget.isFinite ||
+        criteria.maxItems < 1 ||
+        criteria.maxItems > 3 ||
+        criteria.remainingProteinTarget <= 0 ||
+        criteria.remainingBudget <= 0 ||
+        (criteria.maxCalories != null &&
+            (!criteria.maxCalories!.isFinite || criteria.maxCalories! < 0))) {
       return [];
     }
 

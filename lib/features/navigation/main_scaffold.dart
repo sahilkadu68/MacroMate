@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../data/database/database_helper.dart';
 import '../../core/theme/app_colors.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../foods/food_catalogue_screen.dart';
 import '../profile/profile_screen.dart';
 import '../progress/progress_screen.dart';
-import '../protein_finder/protein_finder_screen.dart';
+import '../planning/plan_hub_screen.dart';
+import '../meal_logging/meal_log_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   final int initialIndex;
@@ -25,7 +27,8 @@ class MainScaffoldState extends State<MainScaffold> {
   final List<Widget> _screens = const [
     DashboardScreen(),
     FoodCatalogueScreen(),
-    ProteinFinderScreen(),
+    PlanHubScreen(),
+    MealLogScreen(),
     ProgressScreen(),
     ProfileScreen(),
   ];
@@ -48,7 +51,32 @@ class MainScaffoldState extends State<MainScaffold> {
     final isDesktop = screenWidth > 680;
 
     final content = Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: Column(
+        children: [
+          if (DatabaseHelper.instance.isFallbackMode)
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFFFF3CD),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Color(0xFF7A4B00)),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Temporary browser storage is active. Changes may be lost when this tab closes or reloads.',
+                      style: TextStyle(color: Color(0xFF563500)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: IndexedStack(index: _currentIndex, children: _screens),
+          ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: switchTab,
@@ -67,9 +95,17 @@ class MainScaffoldState extends State<MainScaffold> {
             label: 'Foods',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bolt_outlined),
-            selectedIcon: Icon(Icons.bolt, color: AppColors.secondary),
-            label: 'Protein Finder',
+            icon: Icon(Icons.event_note_outlined),
+            selectedIcon: Icon(Icons.event_note, color: AppColors.primaryDark),
+            label: 'Plan',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(
+              Icons.receipt_long,
+              color: AppColors.primaryDark,
+            ),
+            label: 'Logs',
           ),
           NavigationDestination(
             icon: Icon(Icons.insights_outlined),

@@ -1,63 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:macromate_india/app.dart';
-import 'package:macromate_india/core/constants/app_constants.dart';
-import 'package:macromate_india/data/database/database_helper.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:macromate_india/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  setUpAll(() async {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-    await DatabaseHelper.instance.database;
-  });
-
-  testWidgets('MacroMateApp loads and renders 5 navigation destinations', (
+  testWidgets('shows local account entry before opening the tracker', (
     WidgetTester tester,
   ) async {
-    // Set viewport for a standard mobile screen
+    SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.0;
+    tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(const MacroMateApp());
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpWidget(MacroMateApp(auth: AuthController()));
+    await tester.pumpAndSettle();
 
-    // Verify app title & navigation destinations
-    expect(find.text(AppConstants.appName), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Foods'), findsOneWidget);
-    expect(find.text('Protein Finder'), findsOneWidget);
-    expect(find.text('Progress'), findsOneWidget);
-    expect(find.text('Profile'), findsOneWidget);
-
-    // Tap on 'Foods' tab
-    await tester.tap(find.text('Foods'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Indian Food Catalogue'), findsOneWidget);
-
-    // Tap on 'Protein Finder' tab
-    await tester.tap(find.text('Protein Finder'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Find Budget Combinations'), findsOneWidget);
-
-    // Tap on 'Progress' tab
-    await tester.tap(find.text('Progress'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Progress & Analytics'), findsOneWidget);
-
-    // Tap on 'Profile' tab
-    await tester.tap(find.text('Profile'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Profile & Nutrition Goals'), findsOneWidget);
-
-    // Let sqflite internal lock timers finish
-    await tester.pump(const Duration(seconds: 11));
+    expect(find.text('Welcome to MacroMate'), findsOneWidget);
+    expect(find.text('Email or username'), findsOneWidget);
+    expect(
+      find.textContaining('not backed up or synced online'),
+      findsOneWidget,
+    );
+    expect(find.text('Sign in'), findsOneWidget);
   });
 }

@@ -49,7 +49,12 @@ class NutritionService {
     required double nutrientPer100,
     required double quantity,
   }) {
-    if (quantity <= 0 || nutrientPer100 <= 0) return 0.0;
+    if (!quantity.isFinite ||
+        !nutrientPer100.isFinite ||
+        quantity <= 0 ||
+        nutrientPer100 <= 0) {
+      return 0.0;
+    }
     return (nutrientPer100 * quantity) / 100.0;
   }
 
@@ -60,7 +65,14 @@ class NutritionService {
     required double priceBasis,
     required double quantity,
   }) {
-    if (unitPrice <= 0 || priceBasis <= 0 || quantity <= 0) return 0.0;
+    if (!unitPrice.isFinite ||
+        !priceBasis.isFinite ||
+        !quantity.isFinite ||
+        unitPrice <= 0 ||
+        priceBasis <= 0 ||
+        quantity <= 0) {
+      return 0.0;
+    }
     return (unitPrice / priceBasis) * quantity;
   }
 
@@ -71,10 +83,10 @@ class NutritionService {
     required double proteinGrams,
     required double costRupees,
   }) {
-    if (costRupees <= 0 ||
+    if (!proteinGrams.isFinite ||
+        costRupees <= 0 ||
         proteinGrams <= 0 ||
-        costRupees.isNaN ||
-        costRupees.isInfinite) {
+        !costRupees.isFinite) {
       return null;
     }
     return proteinGrams / costRupees;

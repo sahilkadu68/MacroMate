@@ -1,73 +1,37 @@
-# MacroMate India — Implementation Status & Architecture Log
+# Implementation Status
 
-## Overview
-MacroMate India is a Flutter-based practical Indian nutrition and food-budget management application tailored for Indian students and fitness enthusiasts. It combines affordable Indian food choices, transparent nutrition calculations, realistic portions, and budget-aware protein recommendations.
+**Updated:** 5 November 2026. This file describes code changes in progress; see `TESTING_AND_EVALUATION.md` for checks actually run.
 
----
+## Current product
 
-## Audit Findings & Baseline Status
+- Offline-first Flutter app with local account gate, profile setup/editing, food catalogue, meal logging, protein suggestions, recipes, shopping list, tracking, and progress views.
+- Local accounts use a separate account registry, PBKDF2-HMAC-SHA256 password hashes, persisted active account IDs, and a separate SQLite data file per account. First account retains the original database path to preserve prior single-profile data.
+- Password change, account deletion, and logout are available from Profile. Local accounts do not provide online identity, email verification, cloud recovery, encryption, backup, or sync.
+- Main navigation includes Home, Foods, Plan, Logs, Progress, and Profile.
+- Food records now carry cuisine, meal types, ingredients, entry kind, price region/confidence, and a user-price marker. The starter set includes regional prepared-food entries with explicitly low-confidence estimates.
+- A deterministic daily planner can generate meal slots within budget, show remaining target/budget after the plan, log a planned meal, adapt unlogged slots, find lower-cost food substitutions, and add planned foods to the list.
 
-### Strengths
-1. Solid modular architecture with clear separation between data models, database helper, repositories, providers, and UI features.
-2. 50+ localized Indian food items with preparation basis, prices in INR, and macro composition.
-3. Web-compatible database abstraction with SQLite WASM and an in-memory fallback for seamless browser preview.
-4. Existing test suite for database and basic unit tests.
+## Data and limitations
 
-### Shortcomings Identified in Baseline & Resolutions Implemented
-1. **Design System & UI**: Replaced generic styling with custom Deep Forest Green (`#0D5C3A`), Warm Rupee Amber (`#D97706`), crisp 14px radius cards, 1px subtle borders, and macro color tokens.
-2. **Meal Logging**: Rebuilt `LogMealScreen` with multi-item staging, live macro and cost preview, portion adjustment dialogs, "Repeat Yesterday's Meal", and atomic SQLite transaction commits.
-3. **Dietary Rules**: Centralized into `DietaryService`. Enforces true dietary freedom: vegetarians never see eggs/meat/fish; eggetarians can eat vegetarian foods and eggs; non-vegetarians are never forced to consume meat/fish, but animal protein heroes are prioritized when non-veg is selected.
-4. **Protein Finder**: Rebuilt `RecommendationService` with bounded combinatorial search respecting hard constraints (budget, calories, dietary preference) and transparent deterministic scoring (protein coverage, budget savings, efficiency, exact combo size). Feasible combinations can be logged directly into the diary.
-5. **Practical Planning**: Added Recipe Builder (with servings, macro breakdown, and local cost estimates) and persistent Shopping List (`Recipe`, `RecipeIngredient`, `ShoppingItem`).
-6. **Progress & Analytics**: Enhanced `ProgressScreen` to only average logged days (honest metrics without artificial zero-padding) and clear target indicators.
-7. **First-Use Experience**: Added "Getting Started" interactive quick-action card on Home screen for instant meal logging or Protein Finder optimization.
-8. **Persistence v2**: Upgraded SQLite schema to `dbVersion = 2` with tables `recipes`, `recipe_ingredients`, `shopping_items`, and `favorite_foods`, with full in-memory Web fallback synchronization.
+- Existing food composition and prices are not verified against individual IFCT rows or current Mumbai market observations. Newly added dish macros and prices are approximate recipe/planning estimates, clearly labeled as unverified.
+- Costs still use each food's unit price and quantity basis. Recipe builder ingredients have snapshots, but prepared-dish price totals are not yet dynamically derived from structured ingredient quantities.
+- SQLite schema is version 4. The v2→v3 upgrade now retains existing rows and backfills package fields rather than deleting and replacing built-in foods. The v3→v4 upgrade adds food metadata and only inserts missing new records.
+- Each account uses a separate database file. Existing account data is not encrypted by app code and remains accessible to someone with access to the unlocked device/app sandbox.
+- Web SQLite failure uses a temporary in-memory fallback and cannot guarantee persistence.
+- Planner constraints and substitutions are deterministic heuristics. Calorie/protein goals are ranking targets, not guaranteed outcomes or medical guidance.
 
----
+## Research and data references
 
-## 13-Phase Overhaul Execution Plan
+- Official MyFitnessPal and Cronometer support pages were reviewed for food search/detail/serving adjustment, repeat meals, plan swaps, plan-to-log flow, and data-source labels. MacroMate implements offline equivalents appropriate to its scope; no competitor database/assets are copied.
+- ICMR-NIN IFCT 2017 and the Department of Consumer Affairs daily essential-commodity price reports remain reference sources. Current seeded rows do not yet contain row-level IFCT IDs or matched Mumbai price observations.
 
-| Phase | Description | Status |
-|---|---|---|
-| **Phase 1** | Audit the real project & baseline documentation | **Completed** |
-| **Phase 2** | Distinctive Indian fitness-budget design system (`AppColors`, `AppTheme`, responsive layout) | **Completed** |
-| **Phase 3** | User journey improvement: Quick goal setup & seamless navigation | **Completed** |
-| **Phase 4** | Redesigned Home screen (compact hierarchy, real-data protein & budget callouts, compact meals) | **Completed** |
-| **Phase 5** | Redesigned Foods screen (search, dietary filters, user price editing, provenance labels) | **Completed** |
-| **Phase 6** | Rebuilt multi-item meal logging (staged items, live macro/cost totals, repeat meal, favorites) | **Completed** |
-| **Phase 7** | Centralized `DietaryService` (proper eligibility rules: veg, eggetarian, non-veg) | **Completed** |
-| **Phase 8** | Rebuilt Protein Finder (bounded search, hard constraints, transparent ranking, direct log to meal) | **Completed** |
-| **Phase 9** | Practical recipes, meal planning, and shopping list | **Completed** |
-| **Phase 10** | Improved Progress & Profile (honest trends, Mifflin-St Jeor / ICMR calculator) | **Completed** |
-| **Phase 11** | Audit nutrition, cost, and protein efficiency calculations | **Completed** |
-| **Phase 12** | Database schema v2 migrations and resilient Web persistence | **Completed** |
-| **Phase 13** | Comprehensive automated testing, static analysis, and web validation | **Completed** |
+## Deferred
 
----
+- Structured ingredient-level price records and dynamic prepared-meal costing.
+- Plan history and multi-day generation; automated portion-scaled recipe-to-shopping conversion.
+- Platform keystore encryption, encrypted backup/export, and app-store release signing.
+- Live device testing, airplane-mode verification, and usability research.
 
-## Verification & Test Records
+## Stabilization batch
 
-### 1. Static Analysis (`flutter analyze`)
-- **Status**: Passed (0 issues found)
-- **Execution Output**:
-  ```
-  Analyzing MacroMate...
-  No issues found! (ran in 6.0s)
-  ```
-
-### 2. Automated Test Suite (`flutter test`)
-- **Total Tests**: 35 tests across unit, database, and widget suites
-- **Passed**: 35 / 35 (100% pass rate)
-- **Suites Verified**:
-  - `test/unit/dietary_service_test.dart` (4/4 passed): Veg, Eggetarian, Non-Veg eligibility and catalogue category chips
-  - `test/unit/recipe_model_test.dart` (3/3 passed): Recipe serving scaling, nutrition breakdown, and ShoppingItem purchase toggling
-  - `test/unit/recommendation_service_test.dart` (6/6 passed): Budget constraints, calorie ceiling, infeasible fallback, and diet hero combos
-  - `test/unit/nutrition_service_test.dart` (8/8 passed): Scaling, efficiency, daily totals, Mifflin-St Jeor BMR/TDEE calculations
-  - `test/unit/food_provider_test.dart` (6/6 passed): Seeding, search, dietary filtering, sorting
-  - `test/database/database_test.dart` (7/7 passed): SQLite persistence, food CRUD, meal logging immutability, water, weight, activity tracking
-  - `test/widget_test.dart` (1/1 passed): App loads with 5 navigation destinations without layout overflow
-
-### 3. Production Web Build (`flutter build web --release`)
-- **Status**: Succeeded
-- **Target**: `build/web`
-- **Output**: Verified web compilation with Wasm readiness, icon font tree-shaking, and zero errors.
+Shopping quantities can now be edited with validation and save errors. Outstanding groceries show an estimate based on matching catalogue prices with compatible units; unpriced items are explicitly counted. Recipe aggregation no longer combines incompatible units. Saved recipe details and future recipe logs refresh matching ingredient values; missing ingredients retain saved snapshots. Planner exclusions apply to generation and substitution, using case-insensitive text matching and account/day-scoped persistence. These changes do not provide certified allergy filtering or verified nutrition data.

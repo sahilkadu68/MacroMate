@@ -38,6 +38,34 @@ void main() {
       }
     });
 
+    test('filter rejects missing or non-finite prices and nutrient values', () {
+      final validFood = testFoods.first;
+      final filtered = RecommendationService.filterEligibleFoods(
+        allFoods: [
+          validFood.copyWith(estimatedUnitPrice: 0),
+          validFood.copyWith(estimatedUnitPrice: double.nan),
+          validFood.copyWith(proteinPer100: double.infinity),
+        ],
+        dietaryPreference: AppConstants.dietAll,
+        excludedFoodIds: [],
+      );
+
+      expect(filtered, isEmpty);
+    });
+
+    test('findRecommendations rejects non-finite criteria', () {
+      final recommendations = RecommendationService.findRecommendations(
+        allFoods: testFoods,
+        criteria: const RecommendationCriteria(
+          remainingProteinTarget: double.nan,
+          remainingBudget: 100,
+          maxCalories: 500,
+        ),
+      );
+
+      expect(recommendations, isEmpty);
+    });
+
     test('findRecommendations generates valid combinations within budget', () {
       const criteria = RecommendationCriteria(
         remainingProteinTarget: 35.0, // Need 35g protein

@@ -175,6 +175,42 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
     );
   }
 
+  void _showCuisineSheet(BuildContext context, FoodProvider provider) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(title: Text('Browse by cuisine')),
+            ListTile(
+              title: const Text('All cuisines'),
+              trailing: provider.selectedCuisine == null
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () {
+                provider.setCuisineFilter(null);
+                Navigator.pop(sheetContext);
+              },
+            ),
+            ...provider.cuisines.map(
+              (cuisine) => ListTile(
+                title: Text(cuisine),
+                trailing: provider.selectedCuisine == cuisine
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () {
+                  provider.setCuisineFilter(cuisine);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showRecipesSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -316,6 +352,11 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
             tooltip: 'Categories',
             onPressed: () => _showCategorySheet(context, foodProvider),
           ),
+          IconButton(
+            icon: const Icon(Icons.public_outlined),
+            tooltip: 'Filter by cuisine',
+            onPressed: () => _showCuisineSheet(context, foodProvider),
+          ),
         ],
       ),
       body: Column(
@@ -392,6 +433,12 @@ class _FoodCatalogueScreenState extends State<FoodCatalogueScreen> {
                     onDeleted: () => foodProvider.setCategoryFilter(null),
                   ),
                 ],
+                if (foodProvider.selectedCuisine != null)
+                  Chip(
+                    label: Text(foodProvider.selectedCuisine!),
+                    deleteIcon: const Icon(Icons.close, size: 14),
+                    onDeleted: () => foodProvider.setCuisineFilter(null),
+                  ),
               ],
             ),
           ),

@@ -15,6 +15,7 @@ void main() {
   setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    await DatabaseHelper.instance.switchAccount(1);
     final dbPath = await databaseFactory.getDatabasesPath();
     final path = p.join(dbPath, DatabaseHelper.dbName);
     await databaseFactory.deleteDatabase(path);

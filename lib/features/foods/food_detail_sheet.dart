@@ -149,12 +149,16 @@ class FoodDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${food.category} • Basis: ${food.preparationBasis}',
+              '${food.cuisine} • ${food.entryType} • Basis: ${food.preparationBasis}',
               style: TextStyle(
                 fontSize: 13,
                 color: theme.colorScheme.onSurface.withAlpha(150),
               ),
             ),
+            if (food.mealTypes.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text('Works for: ${food.mealTypes.join(', ')}'),
+            ],
             const SizedBox(height: 16),
 
             // Macro summary grid
@@ -197,8 +201,10 @@ class FoodDetailSheet extends StatelessWidget {
                     children: [
                       Column(
                         children: [
-                          const Text(
-                            'Estimated Cost',
+                          Text(
+                            food.isUserPrice
+                                ? 'Your local price'
+                                : 'Price estimate',
                             style: TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                           const SizedBox(height: 2),
@@ -252,6 +258,17 @@ class FoodDetailSheet extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    const SizedBox(height: 3),
+                    SizedBox(
+                      width: 230,
+                      child: Text(
+                        '${food.priceRegion} · ${food.priceConfidence}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurface.withAlpha(140),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 OutlinedButton.icon(
@@ -292,6 +309,20 @@ class FoodDetailSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+            ],
+
+            if (food.ingredients.isNotEmpty) ...[
+              Text(
+                'Typical ingredients',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface.withAlpha(160),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(food.ingredients),
+              const SizedBox(height: 14),
             ],
 
             // Action Buttons

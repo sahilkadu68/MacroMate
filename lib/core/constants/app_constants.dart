@@ -26,11 +26,15 @@ class AppConstants {
   static const String mealLunch = 'Lunch';
   static const String mealDinner = 'Dinner';
   static const String mealSnack = 'Snack';
+  static const String mealPreWorkout = 'Pre-workout';
+  static const String mealPostWorkout = 'Post-workout';
   static const List<String> mealTypes = [
     mealBreakfast,
     mealLunch,
     mealDinner,
     mealSnack,
+    mealPreWorkout,
+    mealPostWorkout,
   ];
 
   // Activity levels

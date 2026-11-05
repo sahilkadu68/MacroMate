@@ -27,6 +27,13 @@ class FoodItem {
   isPriceEstimate; // true = estimated retail, false = verified live price
 
   final String sourceNote;
+  final String priceRegion;
+  final String priceConfidence;
+  final bool isUserPrice;
+  final String cuisine;
+  final String entryType;
+  final List<String> mealTypes;
+  final String ingredients;
   final bool isCustom;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -52,6 +59,13 @@ class FoodItem {
     String? priceSource,
     DateTime? lastPriceUpdate,
     this.isPriceEstimate = true,
+    this.priceRegion = 'Mumbai, Maharashtra',
+    this.priceConfidence = 'Unverified estimate',
+    this.isUserPrice = false,
+    this.cuisine = 'Pan-Indian',
+    this.entryType = 'Ingredient',
+    this.mealTypes = const [],
+    this.ingredients = '',
     this.sourceNote = 'Sample reference estimate',
     this.isCustom = false,
     DateTime? createdAt,
@@ -162,6 +176,13 @@ class FoodItem {
     String? priceSource,
     DateTime? lastPriceUpdate,
     bool? isPriceEstimate,
+    String? priceRegion,
+    String? priceConfidence,
+    bool? isUserPrice,
+    String? cuisine,
+    String? entryType,
+    List<String>? mealTypes,
+    String? ingredients,
     String? sourceNote,
     bool? isCustom,
     DateTime? createdAt,
@@ -188,6 +209,13 @@ class FoodItem {
       priceSource: priceSource ?? this.priceSource,
       lastPriceUpdate: lastPriceUpdate ?? this.lastPriceUpdate,
       isPriceEstimate: isPriceEstimate ?? this.isPriceEstimate,
+      priceRegion: priceRegion ?? this.priceRegion,
+      priceConfidence: priceConfidence ?? this.priceConfidence,
+      isUserPrice: isUserPrice ?? this.isUserPrice,
+      cuisine: cuisine ?? this.cuisine,
+      entryType: entryType ?? this.entryType,
+      mealTypes: mealTypes ?? this.mealTypes,
+      ingredients: ingredients ?? this.ingredients,
       sourceNote: sourceNote ?? this.sourceNote,
       isCustom: isCustom ?? this.isCustom,
       createdAt: createdAt ?? this.createdAt,
@@ -217,6 +245,13 @@ class FoodItem {
       'price_source': priceSource,
       'last_price_update': lastPriceUpdate.toIso8601String(),
       'is_price_estimate': isPriceEstimate ? 1 : 0,
+      'price_region': priceRegion,
+      'price_confidence': priceConfidence,
+      'is_user_price': isUserPrice ? 1 : 0,
+      'cuisine': cuisine,
+      'entry_type': entryType,
+      'meal_types': mealTypes.join('|'),
+      'ingredients': ingredients,
       'source_note': sourceNote,
       'is_custom': isCustom ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
@@ -269,6 +304,17 @@ class FoodItem {
       isPriceEstimate:
           map['is_price_estimate'] == null ||
           (map['is_price_estimate'] as int) == 1,
+      priceRegion: map['price_region'] as String? ?? 'Mumbai, Maharashtra',
+      priceConfidence:
+          map['price_confidence'] as String? ?? 'Unverified estimate',
+      isUserPrice: (map['is_user_price'] as int?) == 1,
+      cuisine: map['cuisine'] as String? ?? 'Pan-Indian',
+      entryType: map['entry_type'] as String? ?? 'Ingredient',
+      mealTypes: (map['meal_types'] as String? ?? '')
+          .split('|')
+          .where((value) => value.isNotEmpty)
+          .toList(),
+      ingredients: map['ingredients'] as String? ?? '',
       sourceNote: map['source_note'] as String? ?? '',
       isCustom: (map['is_custom'] as int?) == 1,
       createdAt: map['created_at'] != null

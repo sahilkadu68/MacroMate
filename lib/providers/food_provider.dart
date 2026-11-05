@@ -26,6 +26,7 @@ class FoodProvider with ChangeNotifier {
 
   String _searchQuery = '';
   String? _selectedCategory;
+  String? _selectedCuisine;
   String _selectedCatalogueFilter = DietaryService.filterAll;
   bool _showFavoritesOnly = false;
   FoodSortOption _sortOption = FoodSortOption.proteinPerRupee;
@@ -44,6 +45,14 @@ class FoodProvider with ChangeNotifier {
 
   String get searchQuery => _searchQuery;
   String? get selectedCategory => _selectedCategory;
+  String? get selectedCuisine => _selectedCuisine;
+  List<String> get cuisines =>
+      _allFoods
+          .map((food) => food.cuisine)
+          .where((cuisine) => cuisine.trim().isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
   String get selectedCatalogueFilter => _selectedCatalogueFilter;
   String? get selectedDietaryPreference =>
       _selectedCatalogueFilter == DietaryService.filterVeg ||
@@ -87,6 +96,12 @@ class FoodProvider with ChangeNotifier {
 
   void setCategoryFilter(String? category) {
     _selectedCategory = category;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  void setCuisineFilter(String? cuisine) {
+    _selectedCuisine = cuisine;
     _applyFilters();
     notifyListeners();
   }
@@ -145,6 +160,7 @@ class FoodProvider with ChangeNotifier {
   void resetFilters() {
     _searchQuery = '';
     _selectedCategory = null;
+    _selectedCuisine = null;
     _selectedCatalogueFilter = DietaryService.filterAll;
     _showFavoritesOnly = false;
     _sortOption = FoodSortOption.proteinPerRupee;
@@ -161,13 +177,18 @@ class FoodProvider with ChangeNotifier {
       results = results.where((f) {
         return f.name.toLowerCase().contains(q) ||
             f.category.toLowerCase().contains(q) ||
-            f.preparationBasis.toLowerCase().contains(q);
+            f.preparationBasis.toLowerCase().contains(q) ||
+            f.cuisine.toLowerCase().contains(q) ||
+            f.ingredients.toLowerCase().contains(q);
       }).toList();
     }
 
     // Category filter
     if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
       results = results.where((f) => f.category == _selectedCategory).toList();
+    }
+    if (_selectedCuisine != null) {
+      results = results.where((f) => f.cuisine == _selectedCuisine).toList();
     }
 
     // Dietary classification / tag filter
@@ -215,10 +236,26 @@ class FoodProvider with ChangeNotifier {
   }
 
   Future<void> updateFoodPrice(int foodId, double newPrice) async {
+    if (!newPrice.isFinite || newPrice <= 0) {
+      throw ArgumentError.value(
+        newPrice,
+        'newPrice',
+        'Must be finite and positive.',
+      );
+    }
     try {
       final idx = _allFoods.indexWhere((f) => f.id == foodId);
       if (idx != -1) {
-        final updated = _allFoods[idx].copyWith(estimatedUnitPrice: newPrice);
+        final updated = _allFoods[idx].copyWith(
+          estimatedUnitPrice: newPrice,
+          packagePrice: newPrice,
+          priceSource: 'User-entered local price',
+          priceConfidence: 'User entered; not independently verified',
+          isUserPrice: true,
+          isPriceEstimate: true,
+          lastPriceUpdate: DateTime.now(),
+          sourceNote: 'This price was entered by the user for this device.',
+        );
         await _repository.updateFood(updated);
         _allFoods[idx] = updated;
         _applyFilters();

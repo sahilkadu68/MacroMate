@@ -14,13 +14,51 @@ import 'database_factory_helper.dart';
 
 class DatabaseHelper {
   static const String dbName = 'macromate_india.db';
-  static const int dbVersion = 3;
+  static const int dbVersion = 4;
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   Database? _database;
   bool _isFallbackMode = false;
+  int? _activeAccountId;
+
+  /// Switches the active local account to its own SQLite file.
+  /// Account 1 keeps using the original database path so existing user data is
+  /// preserved and claimed by the first account created on that installation.
+  Future<void> switchAccount(int? accountId) async {
+    if (accountId != null && accountId < 1) {
+      throw ArgumentError.value(accountId, 'accountId');
+    }
+    if (_activeAccountId == accountId) return;
+    if (_database != null && _database!.isOpen) await _database!.close();
+    _database = null;
+    _activeAccountId = accountId;
+    _resetMemoryFallback();
+  }
+
+  static Future<void> deleteAccountDatabase(int accountId) async {
+    initDatabaseFactory();
+    final root = await getDatabasesPath();
+    final filename = accountId == 1
+        ? dbName
+        : 'macromate_india_account_$accountId.db';
+    await deleteDatabase(p.join(root, filename));
+  }
+
+  void _resetMemoryFallback() {
+    _isFallbackMode = false;
+    _memProfile = null;
+    _memFoods.clear();
+    _memMealEntries.clear();
+    _memWaterLogs.clear();
+    _memWeightLogs.clear();
+    _memActivityLogs.clear();
+    _memRecipes.clear();
+    _memShoppingItems.clear();
+    _memFavoriteFoodIds.clear();
+    _nextId = 1000;
+  }
 
   // In-memory fallback storage for web environments without WebAssembly/workers
   UserProfile? _memProfile;
@@ -49,6 +87,9 @@ class DatabaseHelper {
   }
 
   Future<Database?> get database async {
+    if (_activeAccountId == null) {
+      throw StateError('No local account is active.');
+    }
     if (_isFallbackMode) return null;
     if (_database != null && _database!.isOpen) {
       return _database!;
@@ -57,7 +98,7 @@ class DatabaseHelper {
       _database = await _initDatabase();
       return _database;
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return null;
@@ -69,7 +110,10 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     initDatabaseFactory();
     final dbPath = await getDatabasesPath();
-    final path = p.join(dbPath, dbName);
+    final filename = _activeAccountId == 1
+        ? dbName
+        : 'macromate_india_account_${_activeAccountId!}.db';
+    final path = p.join(dbPath, filename);
 
     return await openDatabase(
       path,
@@ -129,6 +173,13 @@ class DatabaseHelper {
         price_source TEXT DEFAULT 'Retail estimate',
         last_price_update TEXT,
         is_price_estimate INTEGER NOT NULL DEFAULT 1,
+        price_region TEXT NOT NULL DEFAULT 'Mumbai, Maharashtra (unverified estimate)',
+        price_confidence TEXT NOT NULL DEFAULT 'Low / unverified',
+        is_user_price INTEGER NOT NULL DEFAULT 0,
+        cuisine TEXT NOT NULL DEFAULT 'Pan-Indian',
+        entry_type TEXT NOT NULL DEFAULT 'Ingredient',
+        meal_types TEXT NOT NULL DEFAULT '',
+        ingredients TEXT NOT NULL DEFAULT '',
         source_note TEXT,
         is_custom INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
@@ -347,13 +398,61 @@ class DatabaseHelper {
         } catch (_) {}
       }
 
-      // Re-seed updated food items while preserving user's custom foods
-      await db.delete('foods', where: 'is_custom = 0');
+      await _addFoodMetadataColumns(db);
+
+      // Backfill the v3 packaging fields from the values already in v2 rows.
+      // Keep existing food rows and their edited prices/macros intact.
+      await db.execute('UPDATE foods SET package_price = estimated_unit_price');
+      await db.execute(
+        'UPDATE foods SET package_quantity = price_quantity_basis',
+      );
       final batch = db.batch();
       for (final food in IndianFoodsSeed.initialFoods) {
-        batch.insert('foods', food.toMap());
+        final exists = await db.query(
+          'foods',
+          columns: ['id'],
+          where: 'name = ?',
+          whereArgs: [food.name],
+          limit: 1,
+        );
+        if (exists.isEmpty) batch.insert('foods', food.toMap());
       }
       await batch.commit(noResult: true);
+    }
+
+    if (oldVersion < 4) {
+      await _addFoodMetadataColumns(db);
+      // Add newly introduced regional meals without rewriting custom foods or
+      // replacing any existing catalogue values that a user has edited.
+      final batch = db.batch();
+      for (final food in IndianFoodsSeed.additionalFoods) {
+        final exists = await db.query(
+          'foods',
+          columns: ['id'],
+          where: 'name = ?',
+          whereArgs: [food.name],
+          limit: 1,
+        );
+        if (exists.isEmpty) batch.insert('foods', food.toMap());
+      }
+      await batch.commit(noResult: true);
+    }
+  }
+
+  Future<void> _addFoodMetadataColumns(DatabaseExecutor db) async {
+    const columns = [
+      "ALTER TABLE foods ADD COLUMN price_region TEXT NOT NULL DEFAULT 'Not recorded'",
+      "ALTER TABLE foods ADD COLUMN price_confidence TEXT NOT NULL DEFAULT 'Low / unverified'",
+      'ALTER TABLE foods ADD COLUMN is_user_price INTEGER NOT NULL DEFAULT 0',
+      "ALTER TABLE foods ADD COLUMN cuisine TEXT NOT NULL DEFAULT 'Pan-Indian'",
+      "ALTER TABLE foods ADD COLUMN entry_type TEXT NOT NULL DEFAULT 'Ingredient'",
+      "ALTER TABLE foods ADD COLUMN meal_types TEXT NOT NULL DEFAULT ''",
+      "ALTER TABLE foods ADD COLUMN ingredients TEXT NOT NULL DEFAULT ''",
+    ];
+    for (final sql in columns) {
+      try {
+        await db.execute(sql);
+      } catch (_) {}
     }
   }
 
@@ -403,7 +502,7 @@ class DatabaseHelper {
       final id = await db.insert('user_profile', def.toMap());
       return def.copyWith(id: id);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return _memProfile!;
@@ -436,7 +535,7 @@ class DatabaseHelper {
         return await db.insert('user_profile', map);
       }
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memProfile = profile;
@@ -464,7 +563,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => FoodItem.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return List.from(_memFoods);
@@ -501,7 +600,7 @@ class DatabaseHelper {
       }
       return null;
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         for (final f in _memFoods) {
@@ -530,7 +629,7 @@ class DatabaseHelper {
       }
       return await db.insert('foods', food.toMap());
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final id = _nextId++;
@@ -563,7 +662,7 @@ class DatabaseHelper {
         whereArgs: [food.id],
       );
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final idx = _memFoods.indexWhere((f) => f.id == food.id);
@@ -589,7 +688,7 @@ class DatabaseHelper {
       }
       return await db.delete('foods', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memFoods.removeWhere((f) => f.id == id);
@@ -617,7 +716,7 @@ class DatabaseHelper {
       }
       return await db.insert('meal_entries', entry.toMap());
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final id = _nextId++;
@@ -658,7 +757,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => MealEntry.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return _memMealEntries.where((e) {
@@ -704,7 +803,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => MealEntry.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return _memMealEntries.where((e) {
@@ -744,7 +843,7 @@ class DatabaseHelper {
         await batch.commit(noResult: true);
       });
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         for (final entry in entries) {
@@ -785,7 +884,7 @@ class DatabaseHelper {
         whereArgs: [entry.id],
       );
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final index = _memMealEntries.indexWhere((e) => e.id == entry.id);
@@ -814,7 +913,7 @@ class DatabaseHelper {
       }
       return await db.delete('meal_entries', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memMealEntries.removeWhere((e) => e.id == id);
@@ -844,7 +943,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => WaterLog.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return _memWaterLogs.where((w) => w.entryDate == date).toList();
@@ -884,7 +983,7 @@ class DatabaseHelper {
       }
       return await db.insert('water_logs', log.toMap());
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final id = _nextId++;
@@ -917,7 +1016,7 @@ class DatabaseHelper {
       }
       return await db.delete('water_logs', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memWaterLogs.removeWhere((w) => w.id == id);
@@ -951,7 +1050,7 @@ class DatabaseHelper {
       }
       return 0.0;
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return _memWaterLogs
@@ -985,7 +1084,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => WeightLog.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final logs = List<WeightLog>.from(_memWeightLogs);
@@ -1029,7 +1128,7 @@ class DatabaseHelper {
       }
       return await db.insert('weight_logs', log.toMap());
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final id = _nextId++;
@@ -1063,7 +1162,7 @@ class DatabaseHelper {
       }
       return await db.delete('weight_logs', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memWeightLogs.removeWhere((w) => w.id == id);
@@ -1093,7 +1192,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => ActivityLog.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return _memActivityLogs.where((a) => a.activityDate == date).toList();
@@ -1139,7 +1238,7 @@ class DatabaseHelper {
       }
       return await db.insert('activity_logs', log.toMap());
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final id = _nextId++;
@@ -1175,7 +1274,7 @@ class DatabaseHelper {
       }
       return await db.delete('activity_logs', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memActivityLogs.removeWhere((a) => a.id == id);
@@ -1213,7 +1312,7 @@ class DatabaseHelper {
       }
       return recipes;
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return List.from(_memRecipes);
@@ -1262,7 +1361,7 @@ class DatabaseHelper {
         return rId;
       });
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final rId = _nextId++;
@@ -1288,7 +1387,7 @@ class DatabaseHelper {
       }
       return await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memRecipes.removeWhere((r) => r.id == id);
@@ -1316,7 +1415,7 @@ class DatabaseHelper {
       );
       return maps.map((m) => ShoppingItem.fromMap(m)).toList();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return List.from(_memShoppingItems);
@@ -1342,7 +1441,7 @@ class DatabaseHelper {
       }
       return await db.insert('shopping_items', item.toMap());
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final id = _nextId++;
@@ -1375,7 +1474,7 @@ class DatabaseHelper {
         whereArgs: [item.id],
       );
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         final idx = _memShoppingItems.indexWhere((i) => i.id == item.id);
@@ -1405,7 +1504,7 @@ class DatabaseHelper {
         whereArgs: [id],
       );
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memShoppingItems.removeWhere((i) => i.id == id);
@@ -1430,7 +1529,7 @@ class DatabaseHelper {
       }
       await db.delete('shopping_items', where: 'is_purchased = 1');
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         _memShoppingItems.removeWhere((i) => i.isPurchased);
@@ -1455,7 +1554,7 @@ class DatabaseHelper {
       final maps = await db.query('favorite_foods', columns: ['food_id']);
       return maps.map((m) => m['food_id'] as int).toSet();
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         return Set.from(_memFavoriteFoodIds);
@@ -1507,7 +1606,7 @@ class DatabaseHelper {
         return true;
       }
     } catch (e) {
-      if (kIsWeb) {
+      if (kIsWeb && _activeAccountId != null) {
         _isFallbackMode = true;
         _initMemoryFallback();
         if (_memFavoriteFoodIds.contains(foodId)) {

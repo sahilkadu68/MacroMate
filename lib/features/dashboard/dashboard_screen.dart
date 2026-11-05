@@ -150,6 +150,28 @@ class DashboardScreen extends StatelessWidget {
                     _openEditMeal(context, entry, selectedDate),
                 onDeleteMeal: (id) => mealProvider.deleteMeal(id),
               ),
+              const SizedBox(height: 10),
+              MealSection(
+                mealType: AppConstants.mealPreWorkout,
+                entries: mealProvider.getEntriesForMealType(
+                  AppConstants.mealPreWorkout,
+                ),
+                onAddFood: (slot) => _openLogMeal(context, slot, selectedDate),
+                onEditMeal: (entry) =>
+                    _openEditMeal(context, entry, selectedDate),
+                onDeleteMeal: (id) => mealProvider.deleteMeal(id),
+              ),
+              const SizedBox(height: 10),
+              MealSection(
+                mealType: AppConstants.mealPostWorkout,
+                entries: mealProvider.getEntriesForMealType(
+                  AppConstants.mealPostWorkout,
+                ),
+                onAddFood: (slot) => _openLogMeal(context, slot, selectedDate),
+                onEditMeal: (entry) =>
+                    _openEditMeal(context, entry, selectedDate),
+                onDeleteMeal: (id) => mealProvider.deleteMeal(id),
+              ),
               const SizedBox(height: 80), // Padding for FAB
             ],
           ),

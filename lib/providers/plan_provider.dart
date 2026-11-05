@@ -63,11 +63,28 @@ class PlanProvider with ChangeNotifier {
   }
 
   // Shopping Items
+  Future<void> updateShoppingQuantity(
+    ShoppingItem item,
+    double quantity,
+  ) async {
+    if (!quantity.isFinite || quantity <= 0) {
+      throw ArgumentError('Enter a positive quantity.');
+    }
+    final updated = item.copyWith(quantity: quantity);
+    await _repository.updateShoppingItem(updated);
+    final index = _shoppingItems.indexWhere((value) => value.id == item.id);
+    if (index >= 0) _shoppingItems[index] = updated;
+    notifyListeners();
+  }
+
   Future<void> addShoppingItem(
     String name,
     double quantity,
     String unit,
   ) async {
+    if (name.trim().isEmpty || !quantity.isFinite || quantity <= 0) {
+      throw ArgumentError('Enter a name and a positive quantity.');
+    }
     try {
       final item = ShoppingItem(name: name, quantity: quantity, unit: unit);
       final id = await _repository.addShoppingItem(item);
@@ -76,6 +93,37 @@ class PlanProvider with ChangeNotifier {
     } catch (e) {
       _errorMessage = 'Failed to add shopping item: $e';
       notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> addOrIncrementShoppingItem(
+    String name,
+    double quantity,
+    String unit,
+  ) async {
+    try {
+      final index = _shoppingItems.indexWhere(
+        (item) =>
+            item.name.toLowerCase() == name.toLowerCase() &&
+            item.unit == unit &&
+            !item.isPurchased,
+      );
+      if (index >= 0) {
+        final current = _shoppingItems[index];
+        final updated = current.copyWith(quantity: current.quantity + quantity);
+        await _repository.updateShoppingItem(updated);
+        _shoppingItems[index] = updated;
+      } else {
+        final item = ShoppingItem(name: name, quantity: quantity, unit: unit);
+        final id = await _repository.addShoppingItem(item);
+        _shoppingItems.insert(0, item.copyWith(id: id));
+      }
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to add planned foods to shopping list: $e';
+      notifyListeners();
+      rethrow;
     }
   }
 
@@ -123,6 +171,7 @@ class PlanProvider with ChangeNotifier {
       final existingIdx = _shoppingItems.indexWhere(
         (i) =>
             i.name.toLowerCase() == ing.foodName.toLowerCase() &&
+            i.unit == ing.measurementUnit &&
             !i.isPurchased,
       );
       if (existingIdx != -1) {
