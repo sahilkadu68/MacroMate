@@ -9,6 +9,7 @@ import '../../core/utils/formatters.dart';
 import '../../data/database/database_helper.dart';
 import '../../data/models/food_item.dart';
 import '../../data/models/meal_entry.dart';
+import '../../data/models/shopping_item.dart';
 import '../../providers/food_provider.dart';
 import '../../providers/meal_provider.dart';
 import '../../providers/plan_provider.dart';
@@ -16,6 +17,7 @@ import '../../providers/profile_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/daily_meal_planner_service.dart';
 import '../../services/nutrition_service.dart';
+import '../../services/recipe_cost_service.dart';
 import '../foods/shopping_list_screen.dart';
 
 class DailyMealPlannerScreen extends StatefulWidget {
@@ -31,6 +33,71 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
   bool _loading = true;
   bool _working = false;
   String? _message;
+  Set<int>? _availableFoods;
+
+  Future<void> _chooseAvailableFoods() async {
+    final foods = context.read<FoodProvider>().allFoods;
+    final chosen = {...?_availableFoods};
+    bool restrict = _availableFoods != null;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, update) => AlertDialog(
+          title: const Text('Cook with what you have'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 360,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Use only checked foods'),
+                  value: restrict,
+                  onChanged: (value) => update(() => restrict = value),
+                ),
+                Expanded(
+                  child: ListView(
+                    children: foods
+                        .where((food) => food.id != null)
+                        .map(
+                          (food) => CheckboxListTile(
+                            title: Text(food.name),
+                            value: chosen.contains(food.id),
+                            onChanged: !restrict
+                                ? null
+                                : (value) => update(() {
+                                    if (value == true) {
+                                      chosen.add(food.id!);
+                                    } else {
+                                      chosen.remove(food.id);
+                                    }
+                                  }),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (accepted == true && mounted) {
+      setState(() => _availableFoods = restrict ? chosen : null);
+      await _persist();
+    }
+  }
+
   final _exclusions = TextEditingController();
   List<String> get _excludedIngredients => _exclusions.text
       .split(',')
@@ -65,6 +132,8 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
   Future<void> _loadPlan() async {
     await context.read<FoodProvider>().loadFoods();
     if (!mounted) return;
+    await context.read<PlanProvider>().loadAll();
+    if (!mounted) return;
     final consumed = await _todayTotals();
     final prefs = await SharedPreferences.getInstance();
     final encoded = prefs.getString(_planKey);
@@ -77,9 +146,12 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
       return;
     }
     try {
-      final foods = context.read<FoodProvider>().allFoods;
+      final foods = _planningFoods();
       final ids = {for (final food in foods) food.id: food};
       final data = jsonDecode(encoded) as Map<String, dynamic>;
+      _availableFoods = (data['availableFoods'] as List<dynamic>?)
+          ?.cast<int>()
+          .toSet();
       _exclusions.text = data['excludedIngredients'] as String? ?? '';
       final meals = (data['meals'] as List<dynamic>)
           .map((raw) {
@@ -115,6 +187,10 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
       _planKey,
       jsonEncode({
         'mealCount': _mealCount,
+        'plannedCost': _meals
+            .where((meal) => meal.status != 'skipped')
+            .fold<double>(0, (sum, meal) => sum + meal.cost),
+        'availableFoods': _availableFoods?.toList(),
         'excludedIngredients': _exclusions.text,
         'meals': _meals
             .where((meal) => meal.food.id != null)
@@ -129,6 +205,37 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
             .toList(),
       }),
     );
+  }
+
+  List<FoodItem> _planningFoods() {
+    final foods = context.read<FoodProvider>().allFoods;
+    final recipes = context.read<PlanProvider>().recipes.where(
+      (recipe) =>
+          recipe.id != null &&
+          recipe.servings > 0 &&
+          recipe.ingredients.isNotEmpty &&
+          recipe.ingredients.every(
+            (ingredient) => foods.any(
+              (food) =>
+                  food.id == ingredient.foodId &&
+                  food.measurementUnit == ingredient.measurementUnit,
+            ),
+          ),
+    );
+    return [
+      ...foods.where(
+        (food) => _availableFoods == null || _availableFoods!.contains(food.id),
+      ),
+      ...recipes
+          .where(
+            (recipe) =>
+                _availableFoods == null ||
+                recipe.ingredients.every(
+                  (ingredient) => _availableFoods!.contains(ingredient.foodId),
+                ),
+          )
+          .map((recipe) => RecipeCostService.asPlannableFood(recipe, foods)),
+    ];
   }
 
   List<String> _slotsForCount(int count) => switch (count) {
@@ -157,7 +264,7 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
     });
     try {
       final profile = context.read<ProfileProvider>().profile;
-      final foods = context.read<FoodProvider>().allFoods;
+      final foods = _planningFoods();
       final consumed = await _todayTotals();
       _consumed = consumed;
       final targets = NutritionService.calculateRemainingTargets(
@@ -255,6 +362,7 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
           entryDate: _today,
           mealType: meal.mealType,
           quantity: meal.quantity,
+          linkToCatalogue: meal.food.entryType != 'Recipe',
         );
         await context.read<MealProvider>().addMeal(entry);
         _consumed = await _todayTotals();
@@ -272,7 +380,9 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
 
   Future<void> _adjustQuantity(int index, double factor) async {
     final meal = _meals[index];
-    final step = meal.food.measurementUnit == AppConstants.unitPiece
+    final step = meal.food.measurementUnit == 'serving'
+        ? 0.25
+        : meal.food.measurementUnit == AppConstants.unitPiece
         ? 1.0
         : 25.0;
     final next = (meal.quantity + step * factor).clamp(step, 2000).toDouble();
@@ -285,7 +395,7 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
     final profile = context.read<ProfileProvider>().profile;
     final alternatives = DailyMealPlannerService.substitutions(
       current: current.food,
-      foods: context.read<FoodProvider>().allFoods,
+      foods: _planningFoods(),
       dietaryPreference: profile.dietaryPreference,
       excludedIngredients: _excludedIngredients,
     );
@@ -333,9 +443,10 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
   }
 
   Future<void> _addPendingToShoppingList() async {
+    final batch = <ShoppingItem>[];
     final quantities = <String, ({double quantity, String unit})>{};
     for (final meal in _meals.where((meal) => meal.status == 'planned')) {
-      final key = meal.food.name.toLowerCase();
+      final key = '${meal.food.id}|${meal.food.measurementUnit}';
       final existing = quantities[key];
       quantities[key] = (
         quantity: (existing?.quantity ?? 0) + meal.quantity,
@@ -344,19 +455,45 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
     }
     try {
       for (final meal in _meals.where((meal) => meal.status == 'planned')) {
-        final key = meal.food.name.toLowerCase();
+        final key = '${meal.food.id}|${meal.food.measurementUnit}';
         final aggregate = quantities.remove(key);
         if (aggregate != null) {
-          await context.read<PlanProvider>().addOrIncrementShoppingItem(
-            meal.food.name,
-            aggregate.quantity,
-            aggregate.unit,
+          if (meal.food.entryType == 'Recipe') {
+            final recipe = context.read<PlanProvider>().recipes.firstWhere(
+              (recipe) => recipe.id == -meal.food.id!,
+            );
+            for (final ingredient in recipe.ingredients) {
+              batch.add(
+                ShoppingItem(
+                  name: ingredient.foodName,
+                  quantity:
+                      ingredient.quantity *
+                      aggregate.quantity /
+                      recipe.servings,
+                  unit: ingredient.measurementUnit,
+                ),
+              );
+            }
+            continue;
+          }
+          batch.add(
+            ShoppingItem(
+              name: meal.food.name,
+              quantity: aggregate.quantity,
+              unit: aggregate.unit,
+            ),
           );
         }
       }
+      final requestKey =
+          '$_planKey:${jsonEncode(batch.map((item) => [item.name, item.quantity, item.unit]).toList())}';
+      await DatabaseHelper.instance.addShoppingBatch(requestKey, batch);
+      if (!mounted) return;
+      await context.read<PlanProvider>().loadAll();
       if (mounted) {
         setState(
-          () => _message = 'Planned foods were added to your shopping list.',
+          () => _message =
+              'Shopping list saved. Repeating the same plan does not add duplicates.',
         );
       }
     } catch (_) {
@@ -411,6 +548,18 @@ class _DailyMealPlannerScreenState extends State<DailyMealPlannerScreen> {
                     helperMaxLines: 3,
                   ),
                   onChanged: (_) => _persist(),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _working ? null : _chooseAvailableFoods,
+                  icon: const Icon(Icons.kitchen_outlined),
+                  label: Text(
+                    _availableFoods == null
+                        ? 'Choose available foods'
+                        : '${_availableFoods!.length} available foods selected',
+                  ),
+                ),
+                const Text(
+                  'Saved recipes use ingredient-based costs and expand into groceries. Pantry changes apply when generating, adapting or substituting meals.',
                 ),
                 const SizedBox(height: 12),
                 Card(

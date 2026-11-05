@@ -77,3 +77,13 @@ Legend: [x] verified at the stated scope; [~] partial; [ ] pending; [!] blocked.
 - Latest full suite: 54 passed; one account test timed out under simultaneous build load. Isolated account rerun with `--timeout 2m`: all four passed in 86 seconds. No test or password-hashing requirement was disabled.
 - SHA256: B9DBABCA53EE3E7A270B43B7A028F2AAC2B7CF70B3968F1878BEB8BBD4547CC4.
 - Source checkpoint branch: codex/offline-stabilization. This is not full product acceptance; open requirements above remain open.
+
+## Completion batch — 5 November 2026
+- [x] Saved recipes now become planner candidates with current ingredient-derived nutrition and cost; focused recipe test verifies per-serving and half-serving calculations. Recipes with missing/incompatible ingredients are excluded from planning.
+- [~] Pantry controls now persist selected available foods per local account/day and constrain generation, adaptation and substitutions. Recipes require every ingredient to be available. Android UI acceptance remains pending.
+- [x] Planned recipe portions expand into ingredient quantities. Shopping insertion uses one SQLite transaction and a persisted request receipt; database regression verifies aggregation, retry protection and invalid-input rejection.
+- [~] Progress now displays recorded spend, saved-plan estimates and logging consistency. Historical plans without a cost field are omitted; logged-day averages are explicitly labeled. UI acceptance pending.
+- [x] Formatting and static analysis passed. Focused database/planner/recipe run: 13 tests passed, with the updated recipe projection test rerun successfully afterward.
+- [~] Android emulator is now online. Installed checkpoint APK and observed welcome/registration screens; full journey and airplane-mode acceptance remain pending.
+- [ ] Built-in prepared dishes still require sourced structured ingredient quantities. Saved user recipes have a complete ingredient-cost/planner/shopping path; catalogue dish estimates do not yet have that path.
+- [ ] Reusable weekly plans and export/restore remain future opportunities, not completed features.

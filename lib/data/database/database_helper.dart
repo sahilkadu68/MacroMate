@@ -19,6 +19,55 @@ class DatabaseHelper {
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
+  Future<void> addShoppingBatch(
+    String requestKey,
+    List<ShoppingItem> items,
+  ) async {
+    if (items.any(
+      (item) =>
+          item.name.trim().isEmpty ||
+          !item.quantity.isFinite ||
+          item.quantity <= 0,
+    )) {
+      throw ArgumentError('Shopping quantities must be finite and positive.');
+    }
+    final db = await database;
+    if (db == null) {
+      throw StateError('Persistent shopping storage is unavailable.');
+    }
+    await db.transaction((txn) async {
+      await txn.execute(
+        'CREATE TABLE IF NOT EXISTS shopping_batches (request_key TEXT PRIMARY KEY)',
+      );
+      final previous = await txn.query(
+        'shopping_batches',
+        where: 'request_key = ?',
+        whereArgs: [requestKey],
+      );
+      if (previous.isNotEmpty) return;
+      for (final item in items) {
+        final rows = await txn.query(
+          'shopping_items',
+          where: 'LOWER(name) = ? AND unit = ? AND is_purchased = 0',
+          whereArgs: [item.name.toLowerCase(), item.unit],
+          limit: 1,
+        );
+        if (rows.isEmpty) {
+          await txn.insert('shopping_items', item.toMap());
+        } else {
+          final existing = ShoppingItem.fromMap(rows.first);
+          await txn.update(
+            'shopping_items',
+            {'quantity': existing.quantity + item.quantity},
+            where: 'id = ?',
+            whereArgs: [existing.id],
+          );
+        }
+      }
+      await txn.insert('shopping_batches', {'request_key': requestKey});
+    });
+  }
+
   Database? _database;
   bool _isFallbackMode = false;
   int? _activeAccountId;

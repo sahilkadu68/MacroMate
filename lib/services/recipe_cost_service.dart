@@ -2,6 +2,38 @@ import '../data/models/food_item.dart';
 import '../data/models/recipe.dart';
 
 class RecipeCostService {
+  static FoodItem asPlannableFood(Recipe recipe, List<FoodItem> foods) {
+    final current = refresh(recipe, foods);
+    final ids = recipe.ingredients
+        .map((ingredient) => ingredient.foodId)
+        .toSet();
+    final components = foods.where((food) => ids.contains(food.id));
+    final diet =
+        components.any((food) => food.dietaryClassification == 'Non-Vegetarian')
+        ? 'Non-Vegetarian'
+        : components.any((food) => food.dietaryClassification == 'Eggetarian')
+        ? 'Eggetarian'
+        : 'Vegetarian';
+    return FoodItem(
+      id: -recipe.id!,
+      name: recipe.name,
+      category: 'Recipes',
+      dietaryClassification: diet,
+      caloriesPer100: current.perServingCalories * 100,
+      proteinPer100: current.perServingProtein * 100,
+      carbsPer100: current.perServingCarbs * 100,
+      fatPer100: current.perServingFat * 100,
+      measurementUnit: 'serving',
+      servingSize: 1,
+      packagePrice: current.perServingCost,
+      packageQuantity: 1,
+      entryType: 'Recipe',
+      ingredients: recipe.ingredients.map((item) => item.foodName).join(', '),
+      priceSource: 'Sum of current ingredient quantities × local unit prices',
+      priceConfidence: 'Ingredient-derived estimate',
+    );
+  }
+
   /// Refresh future estimates using stable ingredient IDs. Missing ingredients
   /// keep their saved values; historical meal entries are never touched.
   static Recipe refresh(Recipe recipe, List<FoodItem> foods) {

@@ -4,6 +4,7 @@ import 'package:macromate_india/data/database/database_helper.dart';
 import 'package:macromate_india/data/models/activity_log.dart';
 import 'package:macromate_india/data/models/food_item.dart';
 import 'package:macromate_india/data/models/meal_entry.dart';
+import 'package:macromate_india/data/models/shopping_item.dart';
 import 'package:macromate_india/data/models/water_log.dart';
 import 'package:macromate_india/data/models/weight_log.dart';
 import 'package:path/path.dart' as p;
@@ -31,6 +32,35 @@ void main() {
   });
 
   group('Database Initialization & Seeding Tests', () {
+    test(
+      'shopping batches aggregate once and reject invalid input atomically',
+      () async {
+        final items = [
+          ShoppingItem(name: 'Batch rice', quantity: 100),
+          ShoppingItem(name: 'Batch rice', quantity: 50),
+        ];
+        await dbHelper.addShoppingBatch('batch-test', items);
+        await dbHelper.addShoppingBatch('batch-test', items);
+        expect(
+          (await dbHelper.getShoppingItems())
+              .singleWhere((item) => item.name == 'Batch rice')
+              .quantity,
+          150,
+        );
+        await expectLater(
+          dbHelper.addShoppingBatch('invalid', [
+            ShoppingItem(name: 'Invalid', quantity: double.nan),
+          ]),
+          throwsArgumentError,
+        );
+        expect(
+          (await dbHelper.getShoppingItems()).any(
+            (item) => item.name == 'Invalid',
+          ),
+          isFalse,
+        );
+      },
+    );
     test('seeds 50+ Indian food items idempotently', () async {
       final foods = await dbHelper.getAllFoods();
       expect(foods.length, greaterThanOrEqualTo(50));

@@ -20,6 +20,7 @@ void main() {
         packageQuantity: 1000,
       );
       final saved = Recipe(
+        id: 3,
         name: 'Rice bowl',
         servings: 2,
         ingredients: [RecipeIngredient.fromFood(food: food, quantity: 200)],
@@ -32,6 +33,11 @@ void main() {
       expect(refreshed.perServingCost, 10);
       expect(refreshed.totalCalories, saved.totalCalories);
       expect(RecipeCostService.refresh(saved, []).totalCost, 16);
+      final plannable = RecipeCostService.asPlannableFood(saved, [food]);
+      expect(plannable.id, -3);
+      expect(plannable.costForQuantity(1), 8);
+      expect(plannable.caloriesForQuantity(1), saved.perServingCalories);
+      expect(plannable.costForQuantity(0.5), 4);
     },
   );
 }

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
@@ -20,6 +23,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   int _selectedDays = 7;
   bool _isLoading = true;
   List<DailyAnalyticsPoint> _points = [];
+  double _plannedCost = 0;
+  int _plannedDays = 0;
 
   @override
   void initState() {
@@ -31,10 +36,32 @@ class _ProgressScreenState extends State<ProgressScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
+      final accountId = context.read<AuthController>().account!.id;
       final data = await _analyticsService.getNutritionHistory(_selectedDays);
+      final prefs = await SharedPreferences.getInstance();
+      double plannedCost = 0;
+      int plannedDays = 0;
+      for (final point in data) {
+        final encoded = prefs.getString(
+          'daily_plan_${accountId}_${point.date.toIso8601String().substring(0, 10)}',
+        );
+        if (encoded == null) continue;
+        try {
+          final plan = jsonDecode(encoded) as Map<String, dynamic>;
+          final cost = (plan['plannedCost'] as num?)?.toDouble();
+          if (cost != null && cost.isFinite && cost >= 0) {
+            plannedCost += cost;
+            plannedDays++;
+          }
+        } catch (_) {
+          /* Older or unreadable plans do not provide comparison data. */
+        }
+      }
       if (!mounted) return;
       setState(() {
         _points = data;
+        _plannedCost = plannedCost;
+        _plannedDays = plannedDays;
         _isLoading = false;
       });
     } catch (e) {
@@ -113,6 +140,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
               // Summary Stats Card
               Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Logged meals on $daysWithLogs of $_selectedDays days.\n'
+                    'Recorded food spend: ${Formatters.currency(_points.fold<double>(0, (sum, point) => sum + point.cost))}.\n'
+                    'Saved plan estimates: ${Formatters.currency(_plannedCost)} across $_plannedDays days.\n'
+                    'Plans and logs may cover different days. Missing logs are not zero food intake.',
+                  ),
+                ),
+              ),
+              Card(
                 color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -120,7 +158,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Period Averages ($_selectedDays Days)',
+                        'Averages on logged days ($daysWithLogs of $_selectedDays)',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,

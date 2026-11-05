@@ -45,9 +45,10 @@ class MealEntry {
     required DateTime entryDate,
     required String mealType,
     required double quantity,
+    bool linkToCatalogue = true,
   }) {
     return MealEntry(
-      foodId: food.id,
+      foodId: linkToCatalogue ? food.id : null,
       foodNameSnapshot: food.name,
       entryDate: entryDate,
       mealType: mealType,
